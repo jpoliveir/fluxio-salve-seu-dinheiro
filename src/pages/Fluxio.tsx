@@ -1,11 +1,18 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, Check, Clock, Zap } from "lucide-react";
+import { ArrowRight, Check, Clock, Zap, LogOut, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Fluxio() {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted text-foreground antialiased">
       <Helmet>
@@ -29,7 +36,16 @@ export default function Fluxio() {
           <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#recursos">Recursos</a>
           <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#precos">Preços</a>
           <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#ajuda">Ajuda</a>
-          <Button className="ml-2" variant="outline">Entrar</Button>
+          <div className="flex items-center gap-2 ml-2">
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              <User size={16} />
+              {user?.email}
+            </span>
+            <Button size="sm" variant="outline" onClick={handleSignOut}>
+              <LogOut size={16} />
+              Sair
+            </Button>
+          </div>
         </nav>
         <div className="md:hidden">
           <button className="p-2 rounded-md bg-accent hover-scale" aria-label="Abrir menu">
