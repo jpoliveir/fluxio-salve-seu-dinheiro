@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff, LogOut, User, Crown } from "lucide-react";
+import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,13 +26,31 @@ export default function Dashboard() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [userProfile, setUserProfile] = useState<{ display_name: string | null }>({ display_name: null });
   const [loading, setLoading] = useState(true);
   const [showEconomy, setShowEconomy] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchSubscriptions();
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setUserProfile(data || { display_name: null });
+    } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+    }
+  };
 
   const fetchSubscriptions = async () => {
     try {
@@ -57,6 +75,10 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const getUserDisplayName = () => {
+    return userProfile.display_name || user?.email?.split('@')[0] || 'Usuário';
   };
 
   const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.price), 0);
@@ -94,32 +116,71 @@ export default function Dashboard() {
         <meta name="description" content="Gerencie suas assinaturas e controle seus gastos mensais" />
       </Helmet>
 
-      {/* Header */}
+      {/* Header Otimizado para Mobile */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-brand-foreground">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3C8 3 4 4 4 8c0 3 2 5 4 6 2 1 2 1 4 1s2 0 4-1c2-1 4-3 4-6 0-4-4-5-8-5z" />
-              </svg>
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-brand-foreground">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3C8 3 4 4 4 8c0 3 2 5 4 6 2 1 2 1 4 1s2 0 4-1c2-1 4-3 4-6 0-4-4-5-8-5z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-semibold">Fluxio</div>
+                <div className="text-xs text-muted-foreground">Dashboard</div>
+              </div>
             </div>
-            <div>
-              <div className="font-semibold">Fluxio</div>
-              <div className="text-xs text-muted-foreground">Dashboard</div>
+            
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <div className="flex items-center gap-2 text-sm">
+                <User size={16} />
+                <span className="text-muted-foreground">{getUserDisplayName()}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleSignOut}>
+                <LogOut size={16} />
+                Sair
+              </Button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <div className="flex items-center gap-2 text-sm">
-              <User size={16} />
-              <span className="text-muted-foreground">{user?.email}</span>
+
+          {/* Mobile Header */}
+          <div className="md:hidden flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center text-brand-foreground">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3C8 3 4 4 4 8c0 3 2 5 4 6 2 1 2 1 4 1s2 0 4-1c2-1 4-3 4-6 0-4-4-5-8-5z" />
+                </svg>
+              </div>
+              <div className="font-semibold text-sm">Fluxio</div>
             </div>
-            <Button size="sm" variant="outline" onClick={handleSignOut}>
-              <LogOut size={16} />
-              Sair
-            </Button>
+            
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-muted-foreground">{getUserDisplayName()}</div>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu size={16} />
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pt-3 border-t flex flex-col gap-2">
+              <div className="flex justify-center">
+                <ThemeToggle />
+              </div>
+              <Button size="sm" variant="outline" onClick={handleSignOut} className="mx-auto w-fit">
+                <LogOut size={16} />
+                Sair
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 

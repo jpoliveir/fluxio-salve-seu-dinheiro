@@ -40,7 +40,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={
                   <AuthenticatedRedirect>
-                    <Index />
+                    <Fluxio />
                   </AuthenticatedRedirect>
                 } />
                 <Route path="/auth" element={
@@ -48,7 +48,6 @@ const App = () => (
                     <Auth />
                   </AuthenticatedRedirect>
                 } />
-                <Route path="/fluxio" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />

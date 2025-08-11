@@ -71,8 +71,12 @@ export default function Fluxio() {
             </p>
 
             <div className="flex gap-3 flex-wrap">
-              <Button className="px-5 py-3 hover-scale">Começar grátis</Button>
-              <Button className="px-5 py-3" variant="brand">Ver planos</Button>
+              <Button className="px-5 py-3 hover-scale" asChild>
+                <a href="/auth">Começar grátis</a>
+              </Button>
+              <Button className="px-5 py-3" variant="brand" asChild>
+                <a href="/auth">Ver planos</a>
+              </Button>
             </div>
 
             <div className="flex items-center gap-6 pt-2">
@@ -114,7 +118,9 @@ export default function Fluxio() {
                     </div>
 
                     <div className="pt-2">
-                      <Button className="w-full py-3" variant="outline">Ir para painel</Button>
+                      <Button className="w-full py-3" variant="outline" asChild>
+                        <a href="/auth">Ir para painel</a>
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -145,7 +151,9 @@ export default function Fluxio() {
               <p className="text-muted-foreground">Teste o plano Free e veja quanto você pode economizar.</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <Button className="px-6 py-3" variant="brand">Criar conta grátis</Button>
+              <Button className="px-6 py-3" variant="brand" asChild>
+                <a href="/auth">Criar conta grátis</a>
+              </Button>
             </div>
           </div>
         </section>
