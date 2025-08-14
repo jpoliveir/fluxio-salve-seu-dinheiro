@@ -41,6 +41,7 @@ export type Database = {
       subscriptions: {
         Row: {
           billing_cycle: string
+          category: Database["public"]["Enums"]["subscription_category"]
           created_at: string
           id: string
           name: string
@@ -52,6 +53,7 @@ export type Database = {
         }
         Insert: {
           billing_cycle?: string
+          category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
           id?: string
           name: string
@@ -63,6 +65,7 @@ export type Database = {
         }
         Update: {
           billing_cycle?: string
+          category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
           id?: string
           name?: string
@@ -82,7 +85,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      subscription_category: "alimentacao" | "musica" | "streaming" | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -209,6 +212,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_category: ["alimentacao", "musica", "streaming", "outros"],
+    },
   },
 } as const
