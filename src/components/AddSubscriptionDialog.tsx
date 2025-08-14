@@ -45,15 +45,22 @@ export function AddSubscriptionDialog({
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const { error } = await supabase
         .from('subscriptions')
         .insert([{
+          user_id: user.id,
           name: formData.name,
           price: parseFloat(formData.price),
           category: formData.category as 'alimentacao' | 'musica' | 'streaming' | 'outros',
           subscription_status: formData.subscriptionStatus as 'essencial' | 'nao_essencial' | 'otimizavel',
           next_charge_date: formData.nextChargeDate || null,
-        }] as any);
+        }]);
 
       if (error) throw error;
 
