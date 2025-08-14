@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Index from "./pages/Index";
@@ -33,7 +34,8 @@ const App = () => (
     <HelmetProvider>
       <ThemeProvider defaultTheme="system" storageKey="fluxio-theme">
         <AuthProvider>
-          <TooltipProvider>
+          <SubscriptionProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
@@ -57,7 +59,8 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </TooltipProvider>
+            </TooltipProvider>
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     </HelmetProvider>

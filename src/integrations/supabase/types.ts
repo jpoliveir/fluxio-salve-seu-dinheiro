@@ -48,6 +48,7 @@ export type Database = {
           next_charge_date: string | null
           price: number
           status: string
+          subscription_status: string | null
           updated_at: string
           user_id: string
         }
@@ -60,6 +61,7 @@ export type Database = {
           next_charge_date?: string | null
           price?: number
           status?: string
+          subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -72,6 +74,7 @@ export type Database = {
           next_charge_date?: string | null
           price?: number
           status?: string
+          subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -36,6 +36,7 @@ export function AddSubscriptionDialog({
     name: '',
     price: '',
     category: '',
+    subscriptionStatus: 'essencial',
     nextChargeDate: ''
   });
 
@@ -50,6 +51,7 @@ export function AddSubscriptionDialog({
           name: formData.name,
           price: parseFloat(formData.price),
           category: formData.category as 'alimentacao' | 'musica' | 'streaming' | 'outros',
+          subscription_status: formData.subscriptionStatus as 'essencial' | 'nao_essencial' | 'otimizavel',
           next_charge_date: formData.nextChargeDate || null,
         }] as any);
 
@@ -62,7 +64,7 @@ export function AddSubscriptionDialog({
 
       onSubscriptionAdded();
       onOpenChange(false);
-      setFormData({ name: '', price: '', category: '', nextChargeDate: '' });
+      setFormData({ name: '', price: '', category: '', subscriptionStatus: 'essencial', nextChargeDate: '' });
     } catch (error) {
       console.error('Erro ao adicionar assinatura:', error);
       toast({
@@ -149,6 +151,24 @@ export function AddSubscriptionDialog({
                 <SelectItem value="musica">Música</SelectItem>
                 <SelectItem value="streaming">Streaming</SelectItem>
                 <SelectItem value="outros">Outros</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="subscriptionStatus">Status da Assinatura</Label>
+            <Select 
+              value={formData.subscriptionStatus} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, subscriptionStatus: value }))}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="essencial">Essencial</SelectItem>
+                <SelectItem value="nao_essencial">Não Essencial</SelectItem>
+                <SelectItem value="otimizavel">Otimizável</SelectItem>
               </SelectContent>
             </Select>
           </div>

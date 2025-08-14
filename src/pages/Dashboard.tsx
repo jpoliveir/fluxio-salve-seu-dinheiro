@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { supabase } from "@/integrations/supabase/client";
 import { AddSubscriptionDialog } from "@/components/AddSubscriptionDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +16,7 @@ interface Subscription {
   name: string;
   price: number;
   category: string;
+  subscription_status: string;
   next_charge_date: string | null;
   billing_cycle: string;
   status: string;
@@ -24,12 +27,14 @@ interface Subscription {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const { plan } = useSubscription();
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [userProfile, setUserProfile] = useState<{ display_name: string | null }>({ display_name: null });
   const [loading, setLoading] = useState(true);
   const [showEconomy, setShowEconomy] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -82,7 +87,12 @@ export default function Dashboard() {
   };
 
   const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.price), 0);
-  const potentialSavings = totalMonthly * 0.15; // 15% de economia potencial
+  
+  // Calcular economia potencial baseada nas assinaturas não essenciais e otimizáveis
+  const optimizableSubscriptions = subscriptions.filter(sub => 
+    sub.subscription_status === 'nao_essencial' || sub.subscription_status === 'otimizavel'
+  );
+  const potentialSavings = optimizableSubscriptions.reduce((sum, sub) => sum + Number(sub.price), 0);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -214,10 +224,16 @@ export default function Dashboard() {
               </Button>
             </CardHeader>
             <CardContent>
-              {showEconomy ? (
-                <div className="text-3xl font-bold text-green-600">
-                  {formatCurrency(potentialSavings)}
-                </div>
+              {plan === 'premium' || plan === 'enterprise' ? (
+                showEconomy ? (
+                  <div className="text-3xl font-bold text-green-600">
+                    {formatCurrency(potentialSavings)}
+                  </div>
+                ) : (
+                  <div className="text-3xl font-bold text-muted-foreground">
+                    ••••••
+                  </div>
+                )
               ) : (
                 <div className="text-3xl font-bold text-muted-foreground">
                   ••••••
@@ -225,9 +241,23 @@ export default function Dashboard() {
               )}
               <div className="flex items-center gap-2 mt-1">
                 <Crown size={14} className="text-yellow-500" />
-                <p className="text-sm text-muted-foreground">
-                  Recurso Premium
-                </p>
+                {plan === 'premium' || plan === 'enterprise' ? (
+                  <p className="text-sm text-muted-foreground">
+                    {optimizableSubscriptions.length} assinatura{optimizableSubscriptions.length !== 1 ? 's' : ''} otimizável{optimizableSubscriptions.length !== 1 ? 'is' : ''}
+                  </p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">Recurso Premium</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowPlans(true)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      Upgrade
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -301,6 +331,23 @@ export default function Dashboard() {
         onOpenChange={setShowAddDialog}
         onSubscriptionAdded={fetchSubscriptions}
       />
+      
+      {/* Modal de Planos */}
+      {showPlans && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Escolha seu Plano</h2>
+                <Button variant="ghost" onClick={() => setShowPlans(false)}>
+                  ✕
+                </Button>
+              </div>
+              <SubscriptionPlans />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
