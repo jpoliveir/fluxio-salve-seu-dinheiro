@@ -32,6 +32,38 @@ const Index = () => {
               <Link to="/auth">Entrar</Link>
             </Button>
           </div>
+          
+          {/* Seção de características */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 text-left">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand">
+                  <path d="M9 12l2 2 4-4"/>
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Controle Total</h3>
+              <p className="text-muted-foreground">Gerencie todas as suas assinaturas em um só lugar com alertas inteligentes.</p>
+            </div>
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Economia Inteligente</h3>
+              <p className="text-muted-foreground">Receba sugestões personalizadas para otimizar seus gastos mensais.</p>
+            </div>
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand">
+                  <path d="M3 13l4 4L22 2"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Nunca Mais Esqueça</h3>
+              <p className="text-muted-foreground">Alertas automáticos antes das renovações para evitar cobranças inesperadas.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

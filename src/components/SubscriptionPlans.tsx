@@ -33,10 +33,10 @@ const plans = [
     ]
   },
   {
-    name: "Enterprise",
+    name: "Ultimate",
     price: "R$ 19,90",
     period: "/mês",
-    priceId: "price_enterprise", // Substituir pelo ID real do Stripe
+    priceId: "prod_SrwrqGuVWyqeld",
     features: [
       "Todos os recursos Premium",
       "Múltiplos usuários",
