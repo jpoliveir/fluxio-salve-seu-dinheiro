@@ -42,7 +42,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={
                   <AuthenticatedRedirect>
-                    <Index />
+                    <Fluxio />
                   </AuthenticatedRedirect>
                 } />
                 <Route path="/auth" element={
