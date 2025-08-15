@@ -20,14 +20,14 @@ export default function Auth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        navigate("/fluxio");
+        navigate("/dashboard");
       }
     });
 
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        navigate("/fluxio");
+        navigate("/dashboard");
       }
     });
 
@@ -39,7 +39,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/fluxio`;
+      const redirectUrl = `${window.location.origin}/dashboard`;
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -78,7 +78,7 @@ export default function Auth() {
         toast.error(error.message);
       } else {
         toast.success("Login realizado com sucesso!");
-        navigate("/fluxio");
+        navigate("/dashboard");
       }
     } catch (error: any) {
       toast.error("Erro inesperado: " + error.message);
