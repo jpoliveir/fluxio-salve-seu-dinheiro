@@ -23,7 +23,7 @@ const plans = [
     name: "Premium",
     price: "R$ 9,90",
     period: "/mês",
-    priceId: "price_premium", // Substituir pelo ID real do Stripe
+    priceId: "prod_SqRvAbA08bK9eY",
     features: [
       "Assinaturas ilimitadas",
       "Análise de economia potencial",
