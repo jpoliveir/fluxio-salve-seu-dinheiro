@@ -52,7 +52,11 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error creating checkout:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: "Verifique se o priceId está correto. Use o Price ID do Stripe, não o Product ID."
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
