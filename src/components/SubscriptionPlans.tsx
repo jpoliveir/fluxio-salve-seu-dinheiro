@@ -21,9 +21,9 @@ const plans = [
   },
   {
     name: "Premium",
-    price: "R$ 9,90",
+    price: "R$ 14,90",
     period: "/mês",
-    priceId: "prod_SqRvAbA08bK9eY",
+    priceId: "price_1Rul1ZEiY5JS2SCypJ3LSWMR",
     features: [
       "Assinaturas ilimitadas",
       "Análise de economia potencial",
@@ -34,9 +34,9 @@ const plans = [
   },
   {
     name: "Ultimate",
-    price: "R$ 19,90",
+    price: "R$ 29,90",
     period: "/mês",
-    priceId: "prod_SrwrqGuVWyqeld",
+    priceId: "price_1RwCy9EiY5JS2SCytQ3gBFn5",
     features: [
       "Todos os recursos Premium",
       "Múltiplos usuários",
