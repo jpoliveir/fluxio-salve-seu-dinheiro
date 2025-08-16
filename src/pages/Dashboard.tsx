@@ -10,6 +10,8 @@ import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { supabase } from "@/integrations/supabase/client";
 import { AddSubscriptionDialog } from "@/components/AddSubscriptionDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useEconomiaAssinaturas } from "@/hooks/useEconomiaAssinaturas";
+import { EconomiaDetalhesModal } from "@/components/EconomiaDetalhesModal";
 
 interface Subscription {
   id: string;
@@ -35,7 +37,10 @@ export default function Dashboard() {
   const [showEconomy, setShowEconomy] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showPlans, setShowPlans] = useState(false);
+  const [showEconomiaDetalhes, setShowEconomiaDetalhes] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const { economiaData, loading: economiaLoading, recalcular } = useEconomiaAssinaturas();
 
   useEffect(() => {
     fetchSubscriptions();
@@ -84,6 +89,8 @@ export default function Dashboard() {
 
       if (error) throw error;
       setSubscriptions(data as Subscription[] || []);
+      // Recalcular economia sempre que as assinaturas mudarem
+      recalcular();
     } catch (error) {
       console.error('Erro ao buscar assinaturas:', error);
       toast({
@@ -104,13 +111,18 @@ export default function Dashboard() {
     return userProfile.display_name || user?.email?.split('@')[0] || 'Usuário';
   };
 
+  // Função para obter limite de assinaturas por plano
+  const getSubscriptionLimit = () => {
+    switch (plan) {
+      case 'free': return 3;
+      case 'premium': return 10;
+      case 'enterprise': return 20;
+      default: return 3;
+    }
+  };
+
+  const subscriptionLimit = getSubscriptionLimit();
   const totalMonthly = subscriptions.reduce((sum, sub) => sum + Number(sub.price), 0);
-  
-  // Calcular economia potencial baseada nas assinaturas não essenciais e otimizáveis
-  const optimizableSubscriptions = subscriptions.filter(sub => 
-    sub.subscription_status === 'nao_essencial' || sub.subscription_status === 'otimizavel'
-  );
-  const potentialSavings = optimizableSubscriptions.reduce((sum, sub) => sum + Number(sub.price), 0);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -242,52 +254,68 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Economia Potencial</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowEconomy(!showEconomy)}
-                className="p-2"
-              >
-                {showEconomy ? <EyeOff size={16} /> : <Eye size={16} />}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {plan === 'premium' || plan === 'enterprise' ? (
-                showEconomy ? (
-                  <div className="text-3xl font-bold text-green-600">
-                    {formatCurrency(potentialSavings)}
-                  </div>
-                ) : (
-                  <div className="text-3xl font-bold text-muted-foreground">
-                    ••••••
-                  </div>
-                )
-              ) : (
-                <div className="text-3xl font-bold text-muted-foreground">
-                  ••••••
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-1">
-                <Crown size={14} className="text-yellow-500" />
-                {plan === 'premium' || plan === 'enterprise' ? (
-                  <p className="text-sm text-muted-foreground">
-                    {optimizableSubscriptions.length} assinatura{optimizableSubscriptions.length !== 1 ? 's' : ''} otimizável{optimizableSubscriptions.length !== 1 ? 'is' : ''}
-                  </p>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">Recurso Premium</p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPlans(true)}
-                      className="h-6 px-2 text-xs"
-                    >
-                      Upgrade
-                    </Button>
-                  </div>
+              <CardTitle className="text-lg">💰 Economia Potencial</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEconomy(!showEconomy)}
+                  className="p-2"
+                >
+                  {showEconomy ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+                {economiaData && economiaData.detalhes.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowEconomiaDetalhes(true)}
+                  >
+                    Ver Detalhes
+                  </Button>
                 )}
               </div>
+            </CardHeader>
+            <CardContent>
+              {economiaLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-8 bg-muted rounded w-24 mb-2"></div>
+                  <div className="h-4 bg-muted rounded w-32"></div>
+                </div>
+              ) : (
+                <>
+                  {economiaData && economiaData.economia_total > 0 ? (
+                    showEconomy ? (
+                      <div className="text-3xl font-bold text-green-600">
+                        {formatCurrency(economiaData.economia_total)}
+                      </div>
+                    ) : (
+                      <div className="text-3xl font-bold text-muted-foreground">
+                        ••••••
+                      </div>
+                    )
+                  ) : (
+                    <div className="text-3xl font-bold text-muted-foreground">
+                      {formatCurrency(0)}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <Crown size={14} className="text-yellow-500" />
+                    {economiaData && economiaData.detalhes.length > 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {economiaData.detalhes.length} oportunidade{economiaData.detalhes.length !== 1 ? 's' : ''} de economia
+                      </p>
+                    ) : subscriptions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Adicione suas assinaturas para ver quanto poderia economizar
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Adicione o serviço nas assinaturas para análise
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -295,11 +323,25 @@ export default function Dashboard() {
         {/* Lista de Assinaturas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Minhas Assinaturas</CardTitle>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus size={16} />
-              Adicionar
-            </Button>
+            <div>
+              <CardTitle>Minhas Assinaturas</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {subscriptions.length} de {subscriptionLimit} assinaturas cadastradas
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowPlans(true)}
+              >
+                Ver Planos
+              </Button>
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus size={16} />
+                Adicionar
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -359,6 +401,21 @@ export default function Dashboard() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubscriptionAdded={fetchSubscriptions}
+        currentCount={subscriptions.length}
+        onUpgrade={() => {
+          setShowAddDialog(false);
+          setShowPlans(true);
+        }}
+      />
+
+      <EconomiaDetalhesModal
+        open={showEconomiaDetalhes}
+        onOpenChange={setShowEconomiaDetalhes}
+        detalhes={economiaData?.detalhes || []}
+        onUpgrade={() => {
+          setShowEconomiaDetalhes(false);
+          setShowPlans(true);
+        }}
       />
       
       {/* Modal de Planos */}
