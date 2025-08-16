@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import Fluxio from "./pages/Fluxio";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCanceled from "./pages/PaymentCanceled";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,16 @@ const App = () => (
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payment-success" element={
+                  <ProtectedRoute>
+                    <PaymentSuccess />
+                  </ProtectedRoute>
+                } />
+                <Route path="/payment-canceled" element={
+                  <ProtectedRoute>
+                    <PaymentCanceled />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

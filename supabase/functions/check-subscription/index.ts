@@ -7,6 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper logging function for enhanced debugging
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,19 +25,24 @@ serve(async (req) => {
   );
 
   try {
+    logStep("Function started");
+    
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
+    logStep("Authorization header found");
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError) throw new Error(`Authentication error: ${userError.message}`);
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
+    logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
+      logStep("No customer found, returning free plan");
       return new Response(JSON.stringify({ subscribed: false, plan: 'free' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -39,6 +50,8 @@ serve(async (req) => {
     }
 
     const customerId = customers.data[0].id;
+    logStep("Found Stripe customer", { customerId });
+
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
@@ -50,19 +63,28 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
+      logStep("Active subscription found", { subscriptionId: subscription.id });
+      
       const priceId = subscription.items.data[0].price.id;
       const price = await stripe.prices.retrieve(priceId);
       const amount = price.unit_amount || 0;
+      logStep("Checking price amount", { priceId, amount });
       
-      if (amount <= 999) {
-        plan = "basic";
-      } else if (amount <= 1999) {
+      // Valores corretos: Premium R$ 14,90 = 1490 centavos, Ultimate R$ 29,90 = 2990 centavos
+      if (amount === 1490) {
         plan = "premium";
-      } else {
+      } else if (amount === 2990) {
         plan = "enterprise";
+      } else {
+        plan = "free";
+        logStep("Unknown price amount, defaulting to free", { amount });
       }
+      logStep("Determined plan", { plan, amount });
+    } else {
+      logStep("No active subscription found");
     }
 
+    logStep("Returning result", { subscribed: hasActiveSub, plan });
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       plan: plan
@@ -72,6 +94,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR in check-subscription", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

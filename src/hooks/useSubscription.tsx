@@ -62,6 +62,18 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     checkSubscription();
   }, [user, session]);
 
+  // Verificação automática adicional quando há mudanças de rota (para capturar retornos do Stripe)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && session) {
+        checkSubscription();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, session]);
+
   return (
     <SubscriptionContext.Provider value={{
       isSubscribed,

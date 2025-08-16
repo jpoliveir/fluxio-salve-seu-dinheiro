@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu } from "lucide-react";
+import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -27,7 +27,7 @@ interface Subscription {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const { plan } = useSubscription();
+  const { plan, checkSubscription, loading: subscriptionLoading } = useSubscription();
   const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [userProfile, setUserProfile] = useState<{ display_name: string | null }>({ display_name: null });
@@ -40,7 +40,25 @@ export default function Dashboard() {
   useEffect(() => {
     fetchSubscriptions();
     fetchUserProfile();
+    // Verificação automática da assinatura ao acessar o dashboard
+    checkSubscription();
   }, []);
+
+  const handleRefreshSubscription = async () => {
+    try {
+      await checkSubscription();
+      toast({
+        title: "Status Atualizado",
+        description: "Status da assinatura verificado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao verificar status da assinatura.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -148,7 +166,18 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 text-sm">
                 <User size={16} />
                 <span className="text-muted-foreground">{getUserDisplayName()}</span>
+                {(plan === 'premium' || plan === 'enterprise') && (
+                  <Crown size={14} className="text-yellow-500" />
+                )}
               </div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={handleRefreshSubscription}
+                disabled={subscriptionLoading}
+              >
+                <RefreshCw size={16} className={subscriptionLoading ? "animate-spin" : ""} />
+              </Button>
               <Button size="sm" variant="outline" onClick={handleSignOut}>
                 <LogOut size={16} />
                 Sair
