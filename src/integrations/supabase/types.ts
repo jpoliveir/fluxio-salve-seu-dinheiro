@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      servicos_planos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_plano: string
+          servico: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_plano: string
+          servico: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_plano?: string
+          servico?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           billing_cycle: string
@@ -47,6 +74,7 @@ export type Database = {
           name: string
           next_charge_date: string | null
           price: number
+          servico: string | null
           status: string
           subscription_status: string | null
           updated_at: string
@@ -60,6 +88,7 @@ export type Database = {
           name: string
           next_charge_date?: string | null
           price?: number
+          servico?: string | null
           status?: string
           subscription_status?: string | null
           updated_at?: string
@@ -73,6 +102,7 @@ export type Database = {
           name?: string
           next_charge_date?: string | null
           price?: number
+          servico?: string | null
           status?: string
           subscription_status?: string | null
           updated_at?: string
@@ -85,7 +115,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calcular_economia_assinaturas: {
+        Args: { user_id_param: string }
+        Returns: Json
+      }
     }
     Enums: {
       subscription_category: "alimentacao" | "musica" | "streaming" | "outros"
