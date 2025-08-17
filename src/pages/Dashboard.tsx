@@ -283,19 +283,13 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
-                  {economiaData && economiaData.economia_total > 0 ? (
-                    showEconomy ? (
-                      <div className="text-3xl font-bold text-green-600">
-                        {formatCurrency(economiaData.economia_total)}
-                      </div>
-                    ) : (
-                      <div className="text-3xl font-bold text-muted-foreground">
-                        ••••••
-                      </div>
-                    )
+                  {showEconomy ? (
+                    <div className="text-3xl font-bold text-green-600">
+                      {formatCurrency(economiaData?.economia_total || 0)}
+                    </div>
                   ) : (
                     <div className="text-3xl font-bold text-muted-foreground">
-                      {formatCurrency(0)}
+                      ••••••
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-1">
