@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw } from "lucide-react";
+import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw, Edit, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AddSubscriptionDialog } from "@/components/AddSubscriptionDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useEconomiaAssinaturas } from "@/hooks/useEconomiaAssinaturas";
+import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
 import { EconomiaDetalhesModal } from "@/components/EconomiaDetalhesModal";
+import { EditSubscriptionDialog } from "@/components/EditSubscriptionDialog";
 
 interface Subscription {
   id: string;
@@ -39,8 +41,11 @@ export default function Dashboard() {
   const [showPlans, setShowPlans] = useState(false);
   const [showEconomiaDetalhes, setShowEconomiaDetalhes] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   const { economiaData, loading: economiaLoading, recalcular } = useEconomiaAssinaturas();
+  const { isDuplicate, getDuplicateInfo, detectDuplicates } = useDuplicateDetection();
 
   useEffect(() => {
     fetchSubscriptions();
@@ -89,8 +94,9 @@ export default function Dashboard() {
 
       if (error) throw error;
       setSubscriptions(data as Subscription[] || []);
-      // Recalcular economia sempre que as assinaturas mudarem
+      // Recalcular economia e detectar duplicatas sempre que as assinaturas mudarem
       recalcular();
+      detectDuplicates();
     } catch (error) {
       console.error('Erro ao buscar assinaturas:', error);
       toast({
@@ -147,6 +153,17 @@ export default function Dashboard() {
       outros: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     };
     return colors[category as keyof typeof colors] || colors.outros;
+  };
+
+  const handleEditSubscription = (subscription: Subscription) => {
+    setEditingSubscription(subscription);
+    setShowEditDialog(true);
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditDialog(false);
+    setEditingSubscription(null);
+    fetchSubscriptions();
   };
 
   return (
@@ -366,21 +383,52 @@ export default function Dashboard() {
                         {subscription.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="font-medium">{subscription.name}</h4>
+                        <h4 className="font-medium flex items-center gap-2">
+                          {subscription.name}
+                          {isDuplicate(subscription.id) && (
+                            <div className="group relative">
+                              <AlertTriangle 
+                                size={16} 
+                                className="text-amber-500" 
+                              />
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border shadow-sm">
+                                Possível duplicata: {getDuplicateInfo(subscription.id)?.reason}
+                              </div>
+                            </div>
+                          )}
+                        </h4>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(subscription.category)}`}>
                             {subscription.category.charAt(0).toUpperCase() + subscription.category.slice(1)}
                           </span>
+                          {isDuplicate(subscription.id) && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                              Duplicata
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="text-right">
-                      <div className="font-semibold">
-                        {formatCurrency(Number(subscription.price))}
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-semibold">
+                          {formatCurrency(Number(subscription.price))}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Próxima: {formatDate(subscription.next_charge_date)}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Próxima: {formatDate(subscription.next_charge_date)}
+                      
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditSubscription(subscription)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit size={16} />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -410,6 +458,13 @@ export default function Dashboard() {
           setShowEconomiaDetalhes(false);
           setShowPlans(true);
         }}
+      />
+
+      <EditSubscriptionDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        subscription={editingSubscription}
+        onSuccess={handleEditSuccess}
       />
       
       {/* Modal de Planos */}
