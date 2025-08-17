@@ -12,6 +12,7 @@ interface EconomiaDetalhes {
   planoAtual: PlanoDetalhes;
   planoMaisBarato: PlanoDetalhes;
   economiaPotencial: number;
+  estimativa?: boolean;
 }
 
 interface EconomiaData {

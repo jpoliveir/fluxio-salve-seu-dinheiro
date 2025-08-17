@@ -13,6 +13,7 @@ interface EconomiaDetalhes {
   planoAtual: PlanoDetalhes;
   planoMaisBarato: PlanoDetalhes;
   economiaPotencial: number;
+  estimativa?: boolean;
 }
 
 interface EconomiaDetalhesModalProps {
@@ -83,14 +84,23 @@ export function EconomiaDetalhesModal({
               ) : (
                 <div className="space-y-4">
                   {detalhesParaMostrar.map((item, index) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div key={index} className={`border rounded-lg p-4 space-y-3 ${item.estimativa ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/20' : ''}`}>
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-lg">{item.servico}</h4>
+                        <div>
+                          <h4 className="font-semibold text-lg">{item.servico}</h4>
+                          {item.estimativa && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mt-1">
+                              Estimativa
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-green-600">
                             -{formatCurrency(item.economiaPotencial)}
                           </div>
-                          <div className="text-sm text-muted-foreground">economia mensal</div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.estimativa ? 'estimativa mensal' : 'economia mensal'}
+                          </div>
                         </div>
                       </div>
                       
