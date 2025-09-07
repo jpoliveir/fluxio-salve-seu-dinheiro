@@ -87,7 +87,7 @@ export function EconomiaDetalhesModal({
                     <div key={index} className={`border rounded-lg p-4 space-y-3 ${item.estimativa ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/20' : ''}`}>
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="font-semibold text-lg">{item.servico}</h4>
+                          <h4 className="font-semibold text-lg">{item.servico || "Serviço não especificado"}</h4>
                           {item.estimativa && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mt-1">
                               Estimativa
