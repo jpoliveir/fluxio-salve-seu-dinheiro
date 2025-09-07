@@ -41,7 +41,7 @@ export default function Auth() {
     try {
       const redirectUrl = `${window.location.origin}/dashboard`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -51,6 +51,8 @@ export default function Auth() {
           }
         }
       });
+
+      console.log("SignUp response:", { data, error });
 
       if (error) {
         toast.error(error.message);
