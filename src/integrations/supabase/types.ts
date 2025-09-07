@@ -71,6 +71,7 @@ export type Database = {
           category: Database["public"]["Enums"]["subscription_category"]
           created_at: string
           id: string
+          last_reminder_sent: string | null
           name: string
           next_charge_date: string | null
           price: number
@@ -85,6 +86,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
           id?: string
+          last_reminder_sent?: string | null
           name: string
           next_charge_date?: string | null
           price?: number
@@ -99,6 +101,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
           id?: string
+          last_reminder_sent?: string | null
           name?: string
           next_charge_date?: string | null
           price?: number
@@ -118,6 +121,10 @@ export type Database = {
       calcular_economia_assinaturas: {
         Args: { user_id_param: string }
         Returns: Json
+      }
+      send_renewal_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
