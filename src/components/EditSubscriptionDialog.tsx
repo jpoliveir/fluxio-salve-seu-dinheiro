@@ -50,7 +50,7 @@ export function EditSubscriptionDialog({
         name: subscription.name,
         price: subscription.price.toString(),
         category: subscription.category,
-        servico: subscription.servico || '',
+        servico: subscription.servico || 'none',
         next_charge_date: subscription.next_charge_date || '',
         billing_cycle: subscription.billing_cycle,
         status: subscription.status
@@ -90,7 +90,7 @@ export function EditSubscriptionDialog({
           name: formData.name,
           price: parseFloat(formData.price),
           category: formData.category as any,
-          servico: formData.servico || null,
+          servico: formData.servico === "none" ? null : formData.servico,
           next_charge_date: formData.next_charge_date || null,
           billing_cycle: formData.billing_cycle,
           status: formData.status
@@ -157,7 +157,7 @@ export function EditSubscriptionDialog({
                 <SelectValue placeholder="Selecione o serviço" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {services.map((service) => (
                   <SelectItem key={service} value={service}>
                     {service}

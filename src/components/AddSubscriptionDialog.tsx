@@ -96,7 +96,7 @@ export function AddSubscriptionDialog({
           name: formData.name,
           price: parseFloat(formData.price),
           category: formData.category as any,
-          servico: formData.servico || null,
+          servico: formData.servico === "none" ? null : formData.servico,
           next_charge_date: formData.next_charge_date || null,
           billing_cycle: formData.billing_cycle,
           user_id: user.id
@@ -113,7 +113,7 @@ export function AddSubscriptionDialog({
         name: "",
         price: "",
         category: "",
-        servico: "",
+        servico: "none",
         next_charge_date: "",
         billing_cycle: "monthly"
       });
@@ -195,7 +195,7 @@ export function AddSubscriptionDialog({
                   <SelectValue placeholder="Selecione um serviço para análise de economia" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {servicosDisponiveis.map((servico) => (
                     <SelectItem key={servico} value={servico}>
                       {servico}
