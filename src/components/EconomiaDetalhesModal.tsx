@@ -1,7 +1,11 @@
+import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Crown, Lock } from "lucide-react";
+import { Crown, Lock, Check } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PlanoDetalhes {
   nome: string;
@@ -14,6 +18,7 @@ interface EconomiaDetalhes {
   planoMaisBarato: PlanoDetalhes;
   economiaPotencial: number;
   estimativa?: boolean;
+  subscriptionId?: string;
 }
 
 interface EconomiaDetalhesModalProps {
@@ -21,15 +26,19 @@ interface EconomiaDetalhesModalProps {
   onOpenChange: (open: boolean) => void;
   detalhes: EconomiaDetalhes[];
   onUpgrade: () => void;
+  onRefresh?: () => void;
 }
 
 export function EconomiaDetalhesModal({ 
   open, 
   onOpenChange, 
   detalhes, 
-  onUpgrade 
+  onUpgrade,
+  onRefresh
 }: EconomiaDetalhesModalProps) {
   const { plan } = useSubscription();
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -38,10 +47,46 @@ export function EconomiaDetalhesModal({
     }).format(value);
   };
 
+
   const getDetalhesDisponiveis = () => {
     if (plan === 'free') return [];
     if (plan === 'premium') return detalhes.slice(0, 5);
     return detalhes; // ultimate tem acesso completo
+  };
+
+  const handleConfirmEconomy = async (item: EconomiaDetalhes) => {
+    if (!user || !item.subscriptionId) return;
+
+    try {
+      // Atualizar o valor da assinatura para o valor mais barato sugerido
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          price: item.planoMaisBarato.valor,
+          name: item.planoMaisBarato.nome
+        })
+        .eq('id', item.subscriptionId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Economia confirmada!",
+        description: `Parabéns! Você economizou ${formatCurrency(item.economiaPotencial)} por mês com ${item.servico}.`,
+      });
+
+      // Fechar o modal e atualizar os dados
+      onOpenChange(false);
+      if (onRefresh) onRefresh();
+      
+    } catch (error) {
+      console.error('Erro ao confirmar economia:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a assinatura. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const detalhesParaMostrar = getDetalhesDisponiveis();
@@ -51,7 +96,7 @@ export function EconomiaDetalhesModal({
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            💰 Detalhes da Economia Potencial
+            Detalhes da Economia Potencial
             <Crown size={20} className="text-yellow-500" />
           </DialogTitle>
         </DialogHeader>
@@ -62,7 +107,7 @@ export function EconomiaDetalhesModal({
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <Lock size={24} className="text-muted-foreground" />
               </div>
-              <h3 className="font-medium mb-2">🔒 Detalhes Premium</h3>
+              <h3 className="font-medium mb-2">Detalhes Premium</h3>
               <p className="text-muted-foreground mb-4">
                 Detalhes de economia disponíveis apenas no Premium
               </p>
@@ -124,6 +169,17 @@ export function EconomiaDetalhesModal({
                             </div>
                           </div>
                         </div>
+                      </div>
+                      
+                      <div className="pt-3 border-t">
+                        <Button 
+                          onClick={() => handleConfirmEconomy(item)}
+                          className="w-full"
+                          variant="default"
+                        >
+                          <Check className="w-4 h-4 mr-2" />
+                          Já fiz essa economia!
+                        </Button>
                       </div>
                     </div>
                   ))}

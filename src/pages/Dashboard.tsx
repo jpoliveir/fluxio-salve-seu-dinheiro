@@ -271,7 +271,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">💰 Economia Potencial</CardTitle>
+              <CardTitle className="text-lg">Economia Potencial</CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -453,10 +453,17 @@ export default function Dashboard() {
       <EconomiaDetalhesModal
         open={showEconomiaDetalhes}
         onOpenChange={setShowEconomiaDetalhes}
-        detalhes={economiaData?.detalhes || []}
+        detalhes={(economiaData?.detalhes || []).map(item => ({
+          ...item,
+          subscriptionId: subscriptions.find(sub => sub.name === item.planoAtual.nome)?.id
+        }))}
         onUpgrade={() => {
           setShowEconomiaDetalhes(false);
           setShowPlans(true);
+        }}
+        onRefresh={() => {
+          fetchSubscriptions();
+          recalcular();
         }}
       />
 
