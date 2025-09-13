@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          last_onboarding_reminder_sent: string | null
           updated_at: string
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          last_onboarding_reminder_sent?: string | null
           updated_at?: string
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_onboarding_reminder_sent?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -121,6 +124,10 @@ export type Database = {
       calcular_economia_assinaturas: {
         Args: { user_id_param: string }
         Returns: Json
+      }
+      send_onboarding_reminders: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       send_renewal_reminders: {
         Args: Record<PropertyKey, never>
