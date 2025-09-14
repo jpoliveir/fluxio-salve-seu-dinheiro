@@ -1,6 +1,7 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Crown, Lock, Check } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
@@ -128,61 +129,73 @@ export function EconomiaDetalhesModal({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {detalhesParaMostrar.map((item, index) => (
-                    <div key={index} className={`border rounded-lg p-4 space-y-3 ${item.estimativa ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/20' : ''}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-semibold text-lg">{item.servico || "Serviço não especificado"}</h4>
-                          {item.estimativa && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 mt-1">
-                              Estimativa
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-green-600">
-                            -{formatCurrency(item.economiaPotencial)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.estimativa ? 'estimativa mensal' : 'economia mensal'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <div className="text-sm font-medium text-muted-foreground">Plano Atual</div>
-                          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-                            <div className="font-medium">{item.planoAtual.nome}</div>
-                            <div className="text-lg font-bold">
-                              {formatCurrency(item.planoAtual.valor)}
+                  <Accordion type="multiple" className="space-y-2">
+                    {detalhesParaMostrar.map((item, index) => (
+                      <AccordionItem key={index} value={`item-${index}`} className={`border rounded-lg ${item.estimativa ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/20' : ''}`}>
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <div className="flex items-center justify-between w-full mr-4">
+                            <div className="flex items-center gap-3">
+                              <h4 className="font-semibold text-lg text-left">{item.servico || "Serviço não especificado"}</h4>
+                              {item.estimativa && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                                  Estimativa
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">
+                                -{formatCurrency(item.economiaPotencial)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {item.estimativa ? 'estimativa mensal' : 'economia mensal'}
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        </AccordionTrigger>
                         
-                        <div className="space-y-2">
-                          <div className="text-sm font-medium text-muted-foreground">Plano Mais Barato</div>
-                          <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                            <div className="font-medium">{item.planoMaisBarato.nome}</div>
-                            <div className="text-lg font-bold">
-                              {formatCurrency(item.planoMaisBarato.valor)}
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-4">
+                            <div className="text-xs text-muted-foreground mb-3">
+                              * Informações baseadas em dados públicos e análises de mercado
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium text-muted-foreground">Plano Atual</div>
+                                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                                  <div className="font-medium">{item.planoAtual.nome}</div>
+                                  <div className="text-lg font-bold">
+                                    {formatCurrency(item.planoAtual.valor)}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium text-muted-foreground">Plano Mais Barato</div>
+                                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                  <div className="font-medium">{item.planoMaisBarato.nome}</div>
+                                  <div className="text-lg font-bold">
+                                    {formatCurrency(item.planoMaisBarato.valor)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-3 border-t">
+                              <Button 
+                                onClick={() => handleConfirmEconomy(item)}
+                                className="w-full"
+                                variant="default"
+                              >
+                                <Check className="w-4 h-4 mr-2" />
+                                Já fiz essa economia!
+                              </Button>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-3 border-t">
-                        <Button 
-                          onClick={() => handleConfirmEconomy(item)}
-                          className="w-full"
-                          variant="default"
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Já fiz essa economia!
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                   
                   {plan === 'premium' && detalhes.length > 5 && (
                     <div className="text-center py-4 border rounded-lg bg-muted/50">
