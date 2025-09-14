@@ -62,6 +62,71 @@ export function EditSubscriptionDialog({
     fetchServices();
   }, []);
 
+  // Detectar serviço baseado no nome da assinatura
+  useEffect(() => {
+    if (formData.name && services.length > 0) {
+      const servicoDetectado = detectarServico(formData.name);
+      if (servicoDetectado && servicoDetectado !== formData.servico) {
+        setFormData(prev => ({ ...prev, servico: servicoDetectado }));
+      }
+    }
+  }, [formData.name, services]);
+
+  const detectarServico = (nomeAssinatura: string): string => {
+    const nome = nomeAssinatura.toLowerCase();
+    
+    // Netflix
+    if (nome.includes('netflix')) return 'Netflix';
+    // Spotify
+    if (nome.includes('spotify')) return 'Spotify';
+    // YouTube
+    if (nome.includes('youtube') || nome.includes('yt')) return 'YouTube Premium';
+    // Apple Music
+    if (nome.includes('apple') && nome.includes('music')) return 'Apple Music';
+    // Disney+
+    if (nome.includes('disney')) return 'Disney+';
+    // HBO Max
+    if (nome.includes('hbo')) return 'HBO Max';
+    // Amazon Prime
+    if ((nome.includes('amazon') && nome.includes('prime')) || nome.includes('prime')) return 'Amazon Prime';
+    // Globoplay
+    if (nome.includes('globo')) return 'Globoplay';
+    // Paramount+
+    if (nome.includes('paramount')) return 'Paramount+';
+    // Crunchyroll
+    if (nome.includes('crunchyroll')) return 'Crunchyroll';
+    // Star+
+    if (nome.includes('star')) return 'Star+';
+    // Discovery+
+    if (nome.includes('discovery')) return 'Discovery+';
+    // Microsoft 365
+    if (nome.includes('microsoft') || nome.includes('office')) return 'Microsoft 365';
+    // Google One
+    if (nome.includes('google') && nome.includes('one')) return 'Google One';
+    // Adobe
+    if (nome.includes('adobe')) return 'Adobe Creative Cloud';
+    // Canva
+    if (nome.includes('canva')) return 'Canva Pro';
+    // Notion
+    if (nome.includes('notion')) return 'Notion';
+    // iFood
+    if (nome.includes('ifood')) return 'iFood Pro';
+    // Uber
+    if (nome.includes('uber')) return 'Uber One';
+    // PlayStation
+    if (nome.includes('playstation') || nome.includes('ps')) return 'PlayStation Plus';
+    // Xbox
+    if (nome.includes('xbox') || nome.includes('game pass')) return 'Xbox Game Pass';
+    // Nintendo
+    if (nome.includes('nintendo')) return 'Nintendo Switch Online';
+    // Gympass
+    if (nome.includes('gympass')) return 'Gympass';
+    // Nike
+    if (nome.includes('nike')) return 'Nike Training Club';
+    
+    return 'none';
+  };
+
   const fetchServices = async () => {
     try {
       const { data, error } = await supabase
