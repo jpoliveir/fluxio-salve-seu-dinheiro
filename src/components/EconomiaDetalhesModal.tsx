@@ -95,6 +95,7 @@ export function EconomiaDetalhesModal({
     }
   };
 
+  console.log('Detalhes de economia no modal:', detalhes);
   const detalhesParaMostrar = getDetalhesDisponiveis();
 
   return (
