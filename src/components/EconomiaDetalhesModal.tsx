@@ -13,11 +13,16 @@ interface PlanoDetalhes {
   valor: number;
 }
 
+interface OpcaoPlano {
+  nome: string;
+  valor: number;
+  economia: number;
+}
+
 interface EconomiaDetalhes {
   servico: string;
   planoAtual: PlanoDetalhes;
-  planoMaisBarato: PlanoDetalhes;
-  economiaPotencial: number;
+  opcoes: OpcaoPlano[];
   estimativa?: boolean;
   subscriptionId?: string;
 }
@@ -55,16 +60,16 @@ export function EconomiaDetalhesModal({
     return detalhes; // ultimate tem acesso completo
   };
 
-  const handleConfirmEconomy = async (item: EconomiaDetalhes) => {
+  const handleConfirmEconomy = async (item: EconomiaDetalhes, opcaoEscolhida: OpcaoPlano) => {
     if (!user || !item.subscriptionId) return;
 
     try {
-      // Atualizar o valor da assinatura para o valor mais barato sugerido
+      // Atualizar o valor da assinatura para o valor da opção escolhida
       const { error } = await supabase
         .from('subscriptions')
         .update({
-          price: item.planoMaisBarato.valor,
-          name: item.planoMaisBarato.nome
+          price: opcaoEscolhida.valor,
+          name: opcaoEscolhida.nome
         })
         .eq('id', item.subscriptionId)
         .eq('user_id', user.id);
@@ -73,7 +78,7 @@ export function EconomiaDetalhesModal({
 
       toast({
         title: "Economia confirmada!",
-        description: `Parabéns! Você economizou ${formatCurrency(item.economiaPotencial)} por mês com ${item.servico}.`,
+        description: `Parabéns! Você economizou ${formatCurrency(opcaoEscolhida.economia)} por mês com ${item.servico}.`,
       });
 
       // Fechar o modal e atualizar os dados
@@ -144,10 +149,10 @@ export function EconomiaDetalhesModal({
                             </div>
                             <div className="text-right">
                               <div className="text-lg font-bold text-green-600">
-                                -{formatCurrency(item.economiaPotencial)}
+                                -{formatCurrency(item.opcoes[0]?.economia || 0)}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {item.estimativa ? 'estimativa mensal' : 'economia mensal'}
+                                {item.estimativa ? 'estimativa mensal' : 'até'} {item.opcoes.length} opção{item.opcoes.length > 1 ? 'ões' : ''}
                               </div>
                             </div>
                           </div>
@@ -159,7 +164,7 @@ export function EconomiaDetalhesModal({
                               * Informações baseadas em dados públicos e análises de mercado
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-3">
                               <div className="space-y-2">
                                 <div className="text-sm font-medium text-muted-foreground">Plano Atual</div>
                                 <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
@@ -171,25 +176,36 @@ export function EconomiaDetalhesModal({
                               </div>
                               
                               <div className="space-y-2">
-                                <div className="text-sm font-medium text-muted-foreground">Plano Mais Barato</div>
-                                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                                  <div className="font-medium">{item.planoMaisBarato.nome}</div>
-                                  <div className="text-lg font-bold">
-                                    {formatCurrency(item.planoMaisBarato.valor)}
-                                  </div>
+                                <div className="text-sm font-medium text-muted-foreground">
+                                  Opções Mais Baratas ({item.opcoes.length})
+                                </div>
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                  {item.opcoes.map((opcao, opcaoIndex) => (
+                                    <div key={opcaoIndex} className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="font-medium text-sm">{opcao.nome}</div>
+                                        <div className="text-sm font-bold text-green-600">
+                                          -{formatCurrency(opcao.economia)}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-lg font-bold">
+                                          {formatCurrency(opcao.valor)}
+                                        </div>
+                                        <Button 
+                                          onClick={() => handleConfirmEconomy(item, opcao)}
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          <Check className="w-3 h-3 mr-1" />
+                                          Fiz essa!
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            </div>
-                            
-                            <div className="pt-3 border-t">
-                              <Button 
-                                onClick={() => handleConfirmEconomy(item)}
-                                className="w-full"
-                                variant="default"
-                              >
-                                <Check className="w-4 h-4 mr-2" />
-                                Já fiz essa economia!
-                              </Button>
                             </div>
                           </div>
                         </AccordionContent>

@@ -7,12 +7,18 @@ interface PlanoDetalhes {
   valor: number;
 }
 
+interface OpcaoPlano {
+  nome: string;
+  valor: number;
+  economia: number;
+}
+
 interface EconomiaDetalhes {
   servico: string;
   planoAtual: PlanoDetalhes;
-  planoMaisBarato: PlanoDetalhes;
-  economiaPotencial: number;
+  opcoes: OpcaoPlano[];
   estimativa?: boolean;
+  subscriptionId?: string;
 }
 
 interface EconomiaData {
