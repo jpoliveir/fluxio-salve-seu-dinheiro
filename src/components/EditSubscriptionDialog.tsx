@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Search } from "lucide-react";
 
 interface Subscription {
   id: string;
@@ -34,6 +35,7 @@ export function EditSubscriptionDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -149,6 +151,10 @@ export function EditSubscriptionDialog({
     }
   };
 
+  const filteredServices = services.filter(service => 
+    service.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subscription) return;
@@ -219,9 +225,18 @@ export function EditSubscriptionDialog({
                   <SelectTrigger className="h-6 w-20 text-xs border-none hover:bg-muted">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border shadow-md">
+                    <div className="flex items-center border-b px-3 pb-2 mb-2">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <Input
+                        placeholder="Buscar serviços..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="border-0 p-0 focus-visible:ring-0 text-sm"
+                      />
+                    </div>
                     <SelectItem value="outros">Outros</SelectItem>
-                    {services.map((service) => (
+                    {filteredServices.map((service) => (
                       <SelectItem key={service} value={service}>
                         {service}
                       </SelectItem>
