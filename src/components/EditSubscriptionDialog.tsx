@@ -196,10 +196,9 @@ export function EditSubscriptionDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Nome e Serviço agrupados */}
-          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome da Assinatura</Label>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome da Assinatura</Label>
+            <div className="relative">
               <Input
                 id="name"
                 value={formData.name}
@@ -207,27 +206,17 @@ export function EditSubscriptionDialog({
                 placeholder="Ex: Netflix Premium"
                 required
               />
+              {formData.name && formData.servico !== 'outros' && formData.servico !== 'none' && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background px-2 py-1 rounded border">
+                  {formData.servico}
+                </div>
+              )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="servico" className="text-sm text-muted-foreground">
-                Serviço {formData.name && formData.servico !== 'none' && formData.servico !== 'outros' ? '(sugerido automaticamente)' : ''}
-              </Label>
-              <Select value={formData.servico} onValueChange={(value) => setFormData({ ...formData, servico: value })}>
-                <SelectTrigger className="border-dashed">
-                  <SelectValue placeholder="Será sugerido baseado no nome" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
-                  {services.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.name && formData.servico !== 'outros' && formData.servico !== 'none' && (
+              <p className="text-xs text-muted-foreground">
+                Serviço detectado automaticamente: {formData.servico}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
