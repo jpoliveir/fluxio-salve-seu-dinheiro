@@ -41,7 +41,6 @@ export function useEconomiaAssinaturas() {
       });
 
       if (error) throw error;
-      console.log('Dados de economia retornados:', data);
       setEconomiaData(data as unknown as EconomiaData);
     } catch (error) {
       console.error('Erro ao calcular economia:', error);
