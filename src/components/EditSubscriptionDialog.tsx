@@ -213,9 +213,22 @@ export function EditSubscriptionDialog({
               )}
             </div>
             {formData.name && formData.servico !== 'outros' && formData.servico !== 'none' && (
-              <p className="text-xs text-muted-foreground">
-                Serviço detectado automaticamente: {formData.servico}
-              </p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Serviço detectado automaticamente: {formData.servico}</span>
+                <Select value={formData.servico} onValueChange={(value) => setFormData({ ...formData, servico: value })}>
+                  <SelectTrigger className="h-6 w-20 text-xs border-none hover:bg-muted">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="outros">Outros</SelectItem>
+                    {services.map((service) => (
+                      <SelectItem key={service} value={service}>
+                        {service}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
 
