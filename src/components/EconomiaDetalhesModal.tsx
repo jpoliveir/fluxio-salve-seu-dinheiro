@@ -64,12 +64,11 @@ export function EconomiaDetalhesModal({
     if (!user || !item.subscriptionId) return;
 
     try {
-      // Atualizar o valor da assinatura para o valor da opção escolhida
+      // Atualizar apenas o valor da assinatura para o valor da opção escolhida
       const { error } = await supabase
         .from('subscriptions')
         .update({
-          price: opcaoEscolhida.valor,
-          name: opcaoEscolhida.nome
+          price: opcaoEscolhida.valor
         })
         .eq('id', item.subscriptionId)
         .eq('user_id', user.id);
