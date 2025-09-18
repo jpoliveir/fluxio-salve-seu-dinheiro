@@ -64,13 +64,14 @@ export function EditSubscriptionDialog({
 
   // Detectar serviço baseado no nome da assinatura
   useEffect(() => {
-    if (formData.name && services.length > 0) {
+    if (formData.name) {
       const servicoDetectado = detectarServico(formData.name);
-      if (servicoDetectado && servicoDetectado !== formData.servico) {
+      // Só atualiza se o serviço atual for 'none' ou se mudou o nome
+      if (servicoDetectado !== formData.servico && (formData.servico === 'none' || formData.servico === '')) {
         setFormData(prev => ({ ...prev, servico: servicoDetectado }));
       }
     }
-  }, [formData.name, services]);
+  }, [formData.name]);
 
   const detectarServico = (nomeAssinatura: string): string => {
     const nome = nomeAssinatura.toLowerCase();
@@ -124,7 +125,7 @@ export function EditSubscriptionDialog({
     // Nike
     if (nome.includes('nike')) return 'Nike Training Club';
     
-    return 'none';
+    return 'outros';
   };
 
   const fetchServices = async () => {
@@ -155,7 +156,7 @@ export function EditSubscriptionDialog({
           name: formData.name,
           price: parseFloat(formData.price),
           category: formData.category as any,
-          servico: formData.servico === "none" ? null : formData.servico,
+          servico: formData.servico === "none" || formData.servico === "outros" ? null : formData.servico,
           next_charge_date: formData.next_charge_date || null,
           billing_cycle: formData.billing_cycle,
           status: formData.status
@@ -190,15 +191,38 @@ export function EditSubscriptionDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome da Assinatura</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Netflix Premium"
-              required
-            />
+          {/* Nome e Serviço agrupados */}
+          <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome da Assinatura</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Ex: Netflix Premium"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="servico" className="text-sm text-muted-foreground">
+                Serviço {formData.name && formData.servico !== 'none' && formData.servico !== 'outros' ? '(sugerido automaticamente)' : ''}
+              </Label>
+              <Select value={formData.servico} onValueChange={(value) => setFormData({ ...formData, servico: value })}>
+                <SelectTrigger className="border-dashed">
+                  <SelectValue placeholder="Será sugerido baseado no nome" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                  {services.map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {service}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -213,23 +237,6 @@ export function EditSubscriptionDialog({
               placeholder="29.90"
               required
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="servico">Serviço</Label>
-            <Select value={formData.servico} onValueChange={(value) => setFormData({ ...formData, servico: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o serviço" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {services.map((service) => (
-                  <SelectItem key={service} value={service}>
-                    {service}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
