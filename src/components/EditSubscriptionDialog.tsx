@@ -66,9 +66,14 @@ export function EditSubscriptionDialog({
   useEffect(() => {
     if (formData.name) {
       const servicoDetectado = detectarServico(formData.name);
-      // Só atualiza se o serviço atual for 'none' ou se mudou o nome
-      if (servicoDetectado !== formData.servico && (formData.servico === 'none' || formData.servico === '')) {
+      // Atualiza sempre que detectar um serviço diferente do atual
+      if (servicoDetectado !== formData.servico) {
         setFormData(prev => ({ ...prev, servico: servicoDetectado }));
+      }
+    } else {
+      // Se limpar o nome, volta para 'outros'
+      if (formData.servico !== 'outros') {
+        setFormData(prev => ({ ...prev, servico: 'outros' }));
       }
     }
   }, [formData.name]);
