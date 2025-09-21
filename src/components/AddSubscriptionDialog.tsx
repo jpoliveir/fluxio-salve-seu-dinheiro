@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
-import { Crown } from "lucide-react";
+import { Crown, Search } from "lucide-react";
 
 interface AddSubscriptionDialogProps {
   open: boolean;
@@ -30,6 +30,7 @@ export function AddSubscriptionDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [servicosDisponiveis, setServicosDisponiveis] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -61,6 +62,79 @@ export function AddSubscriptionDialog({
       fetchServicos();
     }
   }, [open]);
+
+  // Detectar serviço baseado no nome da assinatura
+  useEffect(() => {
+    if (formData.name) {
+      const servicoDetectado = detectarServico(formData.name);
+      if (servicoDetectado !== formData.servico) {
+        setFormData(prev => ({ ...prev, servico: servicoDetectado }));
+      }
+    } else {
+      if (formData.servico !== 'none') {
+        setFormData(prev => ({ ...prev, servico: 'none' }));
+      }
+    }
+  }, [formData.name]);
+
+  const detectarServico = (nomeAssinatura: string): string => {
+    const nome = nomeAssinatura.toLowerCase();
+    
+    // Netflix
+    if (nome.includes('netflix')) return 'Netflix';
+    // Spotify
+    if (nome.includes('spotify')) return 'Spotify';
+    // YouTube
+    if (nome.includes('youtube') || nome.includes('yt')) return 'YouTube Premium';
+    // Apple Music
+    if (nome.includes('apple') && nome.includes('music')) return 'Apple Music';
+    // Disney+
+    if (nome.includes('disney')) return 'Disney+';
+    // HBO Max
+    if (nome.includes('hbo')) return 'HBO Max';
+    // Amazon Prime
+    if ((nome.includes('amazon') && nome.includes('prime')) || nome.includes('prime')) return 'Amazon Prime';
+    // Globoplay
+    if (nome.includes('globo')) return 'Globoplay';
+    // Paramount+
+    if (nome.includes('paramount')) return 'Paramount+';
+    // Crunchyroll
+    if (nome.includes('crunchyroll')) return 'Crunchyroll';
+    // Star+
+    if (nome.includes('star')) return 'Star+';
+    // Discovery+
+    if (nome.includes('discovery')) return 'Discovery+';
+    // Microsoft 365
+    if (nome.includes('microsoft') || nome.includes('office')) return 'Microsoft 365';
+    // Google One
+    if (nome.includes('google') && nome.includes('one')) return 'Google One';
+    // Adobe
+    if (nome.includes('adobe')) return 'Adobe Creative Cloud';
+    // Canva
+    if (nome.includes('canva')) return 'Canva Pro';
+    // Notion
+    if (nome.includes('notion')) return 'Notion';
+    // iFood
+    if (nome.includes('ifood')) return 'iFood Pro';
+    // Uber
+    if (nome.includes('uber')) return 'Uber One';
+    // PlayStation
+    if (nome.includes('playstation') || nome.includes('ps')) return 'PlayStation Plus';
+    // Xbox
+    if (nome.includes('xbox') || nome.includes('game pass')) return 'Xbox Game Pass';
+    // Nintendo
+    if (nome.includes('nintendo')) return 'Nintendo Switch Online';
+    // Gympass
+    if (nome.includes('gympass')) return 'Gympass';
+    // Nike
+    if (nome.includes('nike')) return 'Nike Training Club';
+    
+    return 'none';
+  };
+
+  const filteredServices = servicosDisponiveis.filter(service => 
+    service.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Verificar limite por plano
   const getSubscriptionLimit = () => {
@@ -163,13 +237,47 @@ export function AddSubscriptionDialog({
 
             <div className="space-y-2">
               <Label htmlFor="name">Nome da Assinatura</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Netflix"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Netflix Premium"
+                  required
+                />
+                {formData.name && formData.servico !== 'none' && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background px-2 py-1 rounded border">
+                    {formData.servico}
+                  </div>
+                )}
+              </div>
+              {formData.name && formData.servico !== 'none' && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Serviço detectado automaticamente: {formData.servico}</span>
+                  <Select value={formData.servico} onValueChange={(value) => setFormData({ ...formData, servico: value })}>
+                    <SelectTrigger className="h-6 w-20 text-xs border-none hover:bg-muted">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-md">
+                      <div className="flex items-center border-b px-3 pb-2 mb-2">
+                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                        <Input
+                          placeholder="Buscar serviços..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="border-0 p-0 focus-visible:ring-0 text-sm"
+                        />
+                      </div>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {filteredServices.map((servico) => (
+                        <SelectItem key={servico} value={servico}>
+                          {servico}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
