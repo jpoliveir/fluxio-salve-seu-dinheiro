@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,16 @@ export function EditSubscriptionDialog({
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
+  const [originalData, setOriginalData] = useState({
+    name: '',
+    price: '',
+    category: '',
+    servico: '',
+    next_charge_date: '',
+    billing_cycle: '',
+    status: ''
+  });
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -48,7 +59,7 @@ export function EditSubscriptionDialog({
 
   useEffect(() => {
     if (subscription) {
-      setFormData({
+      const data = {
         name: subscription.name,
         price: subscription.price.toString(),
         category: subscription.category,
@@ -56,7 +67,9 @@ export function EditSubscriptionDialog({
         next_charge_date: subscription.next_charge_date || '',
         billing_cycle: subscription.billing_cycle,
         status: subscription.status
-      });
+      };
+      setFormData(data);
+      setOriginalData(data);
     }
   }, [subscription]);
 
@@ -151,7 +164,41 @@ export function EditSubscriptionDialog({
     }
   };
 
-  const filteredServices = services.filter(service => 
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = () => {
+    return JSON.stringify(formData) !== JSON.stringify(originalData);
+  };
+
+  // Handle dialog close with unsaved changes check
+  const handleClose = (newOpen: boolean) => {
+    if (!newOpen && hasUnsavedChanges()) {
+      setShowUnsavedChangesDialog(true);
+    } else {
+      onOpenChange(newOpen);
+    }
+  };
+
+  // Confirm close without saving
+  const confirmCloseWithoutSaving = () => {
+    setShowUnsavedChangesDialog(false);
+    onOpenChange(false);
+    // Reset form to original data
+    if (subscription) {
+      const data = {
+        name: subscription.name,
+        price: subscription.price.toString(),
+        category: subscription.category,
+        servico: subscription.servico || 'none',
+        next_charge_date: subscription.next_charge_date || '',
+        billing_cycle: subscription.billing_cycle,
+        status: subscription.status
+      };
+      setFormData(data);
+      setOriginalData(data);
+    }
+  };
+
+  const filteredServices = services.filter(service =>
     service.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -195,7 +242,8 @@ export function EditSubscriptionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Assinatura</DialogTitle>
@@ -320,7 +368,7 @@ export function EditSubscriptionDialog({
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button type="button" variant="outline" onClick={() => handleClose(false)} className="flex-1">
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
@@ -330,5 +378,24 @@ export function EditSubscriptionDialog({
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Unsaved Changes Dialog */}
+    <AlertDialog open={showUnsavedChangesDialog} onOpenChange={setShowUnsavedChangesDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
+          <AlertDialogDescription>
+            Você tem alterações não salvas. Tem certeza que deseja sair sem salvar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmCloseWithoutSaving}>
+            Sair sem salvar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
