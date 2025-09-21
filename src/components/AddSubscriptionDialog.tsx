@@ -236,7 +236,7 @@ export function AddSubscriptionDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome da Assinatura</Label>
+              <Label htmlFor="name">Nome do Serviço/Assinatura</Label>
               <div className="relative">
                 <Input
                   id="name"
@@ -293,25 +293,6 @@ export function AddSubscriptionDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="servico">Serviço (opcional)</Label>
-              <Select
-                value={formData.servico}
-                onValueChange={(value) => setFormData({ ...formData, servico: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um serviço para análise de economia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {servicosDisponiveis.map((servico) => (
-                    <SelectItem key={servico} value={servico}>
-                      {servico}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>

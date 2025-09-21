@@ -203,7 +203,7 @@ export function EditSubscriptionDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome da Assinatura</Label>
+            <Label htmlFor="name">Nome do Serviço/Assinatura</Label>
             <div className="relative">
               <Input
                 id="name"
