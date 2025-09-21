@@ -245,36 +245,6 @@ export function EditSubscriptionDialog({
                 </Select>
               </div>
             )}
-            
-            {/* Always show service selector */}
-            <div className="space-y-2">
-              <Label htmlFor="servico">Serviço</Label>
-              <Select
-                value={formData.servico}
-                onValueChange={(value) => setFormData({ ...formData, servico: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Clique para selecionar ou buscar um serviço" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border shadow-md max-h-60">
-                  <div className="flex items-center border-b px-3 pb-2 mb-2 sticky top-0 bg-popover">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                    <Input
-                      placeholder="Buscar serviços..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="border-0 p-0 focus-visible:ring-0 text-sm"
-                    />
-                  </div>
-                  <SelectItem value="outros">Outros</SelectItem>
-                  {filteredServices.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">
