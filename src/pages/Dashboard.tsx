@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw, Edit, AlertTriangle } from "lucide-react";
+import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw, Edit, AlertTriangle, Zap } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -192,25 +195,88 @@ export default function Dashboard() {
             
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <div className="flex items-center gap-2 text-sm">
-                <User size={16} />
-                <span className="text-muted-foreground">{getUserDisplayName()}</span>
-                {(plan === 'premium' || plan === 'enterprise') && (
-                  <Crown size={14} className="text-yellow-500" />
-                )}
-              </div>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={handleRefreshSubscription}
-                disabled={subscriptionLoading}
-              >
-                <RefreshCw size={16} className={subscriptionLoading ? "animate-spin" : ""} />
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleSignOut}>
-                <LogOut size={16} />
-                Sair
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={userProfile.display_name ? undefined : undefined} alt={getUserDisplayName()} />
+                      <AvatarFallback className="bg-brand text-brand-foreground">
+                        {getUserDisplayName().charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {(plan === 'premium' || plan === 'enterprise') && (
+                      <Crown size={12} className="absolute -top-1 -right-1 text-yellow-500 bg-background rounded-full p-0.5" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-brand text-brand-foreground text-lg">
+                          {getUserDisplayName().charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{getUserDisplayName()}</p>
+                        <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Plano Atual</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium capitalize">{plan === 'free' ? 'Gratuito' : plan === 'premium' ? 'Premium' : 'Enterprise'}</span>
+                          {(plan === 'premium' || plan === 'enterprise') && (
+                            <Crown size={14} className="text-yellow-500" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Assinaturas</span>
+                        <span className="font-medium">{subscriptions.length} de {getSubscriptionLimit()}</span>
+                      </div>
+                    </div>
+                    
+                    {plan !== 'enterprise' && (
+                      <>
+                        <Separator />
+                        <Button 
+                          className="w-full" 
+                          onClick={() => setShowPlans(true)}
+                          variant="default"
+                        >
+                          <Zap size={16} />
+                          Fazer Upgrade
+                        </Button>
+                      </>
+                    )}
+                    
+                    <Separator />
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleRefreshSubscription}
+                        disabled={subscriptionLoading}
+                        className="flex-1"
+                      >
+                        <RefreshCw size={16} className={subscriptionLoading ? "animate-spin" : ""} />
+                        Atualizar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleSignOut} className="flex-1">
+                        <LogOut size={16} />
+                        Sair
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
