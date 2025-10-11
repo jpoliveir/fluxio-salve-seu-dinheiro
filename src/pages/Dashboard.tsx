@@ -212,11 +212,16 @@ export default function Dashboard() {
                 <PopoverContent className="w-80" align="end">
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-brand text-brand-foreground text-lg">
-                          {getUserDisplayName().charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-brand text-brand-foreground">
+                            <User size={24} />
+                          </AvatarFallback>
+                        </Avatar>
+                        {(plan === 'premium' || plan === 'enterprise') && (
+                          <Crown size={16} className="absolute -top-1 -right-1 text-yellow-500 bg-background rounded-full p-0.5" />
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{getUserDisplayName()}</p>
                         <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
