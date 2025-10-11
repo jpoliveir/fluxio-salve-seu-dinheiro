@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { emailSchema, passwordSchema, displayNameSchema } from "@/lib/validations";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -39,9 +40,16 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Validar inputs
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+      if (displayName) {
+        displayNameSchema.parse(displayName);
+      }
+
       const redirectUrl = `${window.location.origin}/dashboard`;
       
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -52,15 +60,14 @@ export default function Auth() {
         }
       });
 
-      console.log("SignUp response:", { data, error });
-
       if (error) {
         toast.error(error.message);
       } else {
         toast.success("Conta criada com sucesso! Verifique seu email para confirmar a conta.");
       }
     } catch (error: any) {
-      toast.error("Erro inesperado: " + error.message);
+      const errorMessage = error.errors?.[0]?.message || error.message || "Erro inesperado";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,6 +78,10 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      // Validar inputs
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -83,7 +94,8 @@ export default function Auth() {
         navigate("/dashboard");
       }
     } catch (error: any) {
-      toast.error("Erro inesperado: " + error.message);
+      const errorMessage = error.errors?.[0]?.message || error.message || "Erro inesperado";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

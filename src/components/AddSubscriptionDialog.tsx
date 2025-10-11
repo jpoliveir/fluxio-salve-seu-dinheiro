@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Search } from "lucide-react";
+import { subscriptionSchema } from "@/lib/validations";
 
 interface AddSubscriptionDialogProps {
   open: boolean;
@@ -53,7 +54,8 @@ export function AddSubscriptionDialog({
       const servicosUnicos = [...new Set(data.map(item => item.servico))];
       setServicosDisponiveis(servicosUnicos);
     } catch (error) {
-      console.error('Erro ao buscar serviços:', error);
+      // Falha silenciosa - não afeta funcionalidade principal
+      setServicosDisponiveis([]);
     }
   };
 
@@ -162,6 +164,26 @@ export function AddSubscriptionDialog({
       return;
     }
 
+    // Validar inputs antes de enviar
+    try {
+      subscriptionSchema.parse({
+        name: formData.name,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        billing_cycle: formData.billing_cycle,
+        servico: formData.servico === "none" ? undefined : formData.servico,
+        next_charge_date: formData.next_charge_date || undefined
+      });
+    } catch (validationError: any) {
+      const errorMessage = validationError.errors?.[0]?.message || "Dados inválidos";
+      toast({
+        title: "Erro de validação",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -194,11 +216,10 @@ export function AddSubscriptionDialog({
       
       onSubscriptionAdded();
       onOpenChange(false);
-    } catch (error) {
-      console.error('Erro ao adicionar assinatura:', error);
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Erro ao adicionar assinatura. Tente novamente.",
+        description: error?.message || "Erro ao adicionar assinatura. Tente novamente.",
         variant: "destructive"
       });
     } finally {

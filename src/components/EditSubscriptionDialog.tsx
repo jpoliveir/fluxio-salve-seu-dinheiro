@@ -160,7 +160,8 @@ export function EditSubscriptionDialog({
       const uniqueServices = [...new Set(data.map(item => item.servico))];
       setServices(uniqueServices);
     } catch (error) {
-      console.error('Erro ao buscar serviços:', error);
+      // Falha silenciosa - não afeta funcionalidade principal
+      setServices([]);
     }
   };
 
