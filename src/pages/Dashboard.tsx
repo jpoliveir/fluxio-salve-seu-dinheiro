@@ -407,9 +407,45 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Minhas Assinaturas</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {subscriptions.length} de {subscriptionLimit} assinaturas cadastradas
-              </p>
+              {subscriptions.length >= subscriptionLimit ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-amber-600 dark:text-amber-500 font-medium">
+                    Limite máximo atingido ({subscriptions.length}/{subscriptionLimit})
+                  </p>
+                  {plan !== 'enterprise' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowPlans(true)}
+                      className="h-6 text-xs"
+                    >
+                      <Zap size={12} />
+                      Upgrade
+                    </Button>
+                  )}
+                </div>
+              ) : subscriptions.length === subscriptionLimit - 1 ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                    Falta 1 assinatura para o limite ({subscriptions.length}/{subscriptionLimit})
+                  </p>
+                  {plan !== 'enterprise' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowPlans(true)}
+                      className="h-6 text-xs"
+                    >
+                      <Zap size={12} />
+                      Upgrade
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {subscriptions.length} de {subscriptionLimit} assinaturas cadastradas
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button 
