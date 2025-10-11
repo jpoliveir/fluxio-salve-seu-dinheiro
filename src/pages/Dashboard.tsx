@@ -410,7 +410,7 @@ export default function Dashboard() {
               {subscriptions.length >= subscriptionLimit ? (
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm text-amber-600 dark:text-amber-500 font-medium">
-                    Limite máximo atingido ({subscriptions.length}/{subscriptionLimit})
+                    Limite máximo atingido
                   </p>
                   {plan !== 'enterprise' && (
                     <Button 
@@ -424,10 +424,10 @@ export default function Dashboard() {
                     </Button>
                   )}
                 </div>
-              ) : subscriptions.length === subscriptionLimit - 1 ? (
+              ) : subscriptions.length === subscriptionLimit - 1 && (
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-sm text-amber-600 dark:text-amber-500">
-                    Falta 1 assinatura para o limite ({subscriptions.length}/{subscriptionLimit})
+                    Falta 1 assinatura para o limite
                   </p>
                   {plan !== 'enterprise' && (
                     <Button 
@@ -441,10 +441,6 @@ export default function Dashboard() {
                     </Button>
                   )}
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {subscriptions.length} de {subscriptionLimit} assinaturas cadastradas
-                </p>
               )}
             </div>
             <div className="flex items-center gap-2">
