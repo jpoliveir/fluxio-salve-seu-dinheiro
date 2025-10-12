@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Search } from "lucide-react";
+import { subscriptionSchema } from "@/lib/validations";
 
 interface Subscription {
   id: string;
@@ -209,15 +210,25 @@ export function EditSubscriptionDialog({
 
     setLoading(true);
     try {
+      // Validate input data using Zod schema
+      const validatedData = subscriptionSchema.parse({
+        name: formData.name,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        billing_cycle: formData.billing_cycle,
+        next_charge_date: formData.next_charge_date || undefined,
+        servico: formData.servico === "none" || formData.servico === "outros" ? undefined : formData.servico,
+      });
+
       const { error } = await supabase
         .from('subscriptions')
         .update({
-          name: formData.name,
-          price: parseFloat(formData.price),
-          category: formData.category as any,
-          servico: formData.servico === "none" || formData.servico === "outros" ? null : formData.servico,
-          next_charge_date: formData.next_charge_date || null,
-          billing_cycle: formData.billing_cycle,
+          name: validatedData.name,
+          price: validatedData.price,
+          category: validatedData.category as any,
+          servico: validatedData.servico || null,
+          next_charge_date: validatedData.next_charge_date || null,
+          billing_cycle: validatedData.billing_cycle,
           status: formData.status
         })
         .eq('id', subscription.id);
@@ -231,12 +242,22 @@ export function EditSubscriptionDialog({
       
       onSuccess();
       onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar assinatura. Tente novamente.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      // Handle Zod validation errors
+      if (error.issues) {
+        const errorMessage = error.issues.map((issue: any) => issue.message).join(", ");
+        toast({
+          title: "Dados inválidos",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar assinatura. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
