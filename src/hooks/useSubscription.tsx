@@ -47,14 +47,81 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       if (error) throw error;
 
-      setIsSubscribed(data.subscribed || false);
-      setPlan(data.plan || 'free');
+      const newPlan = data.plan || 'free';
+      const newIsSubscribed = data.subscribed || false;
+
+      setIsSubscribed(newIsSubscribed);
+      setPlan(newPlan);
+
+      // Sincronizar assinatura do Fluxio na dashboard
+      await syncFluxioSubscription(newPlan, newIsSubscribed);
     } catch (error) {
       console.error('Error checking subscription:', error);
       setIsSubscribed(false);
       setPlan('free');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncFluxioSubscription = async (currentPlan: string, subscribed: boolean) => {
+    if (!user) return;
+
+    try {
+      // Verificar se já existe uma assinatura do Fluxio
+      const { data: existingFluxio } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('name', 'Fluxio')
+        .maybeSingle();
+
+      // Mapear planos para preços
+      const planPrices: Record<string, number> = {
+        'premium': 14.90,
+        'enterprise': 29.90,
+      };
+
+      const price = planPrices[currentPlan];
+
+      // Se tem plano pago ativo
+      if (subscribed && price) {
+        if (existingFluxio) {
+          // Atualizar assinatura existente
+          await supabase
+            .from('subscriptions')
+            .update({
+              price: price,
+              status: 'active',
+              billing_cycle: 'monthly',
+              category: 'outros',
+            })
+            .eq('id', existingFluxio.id);
+        } else {
+          // Criar nova assinatura do Fluxio
+          await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: user.id,
+              name: 'Fluxio',
+              price: price,
+              status: 'active',
+              billing_cycle: 'monthly',
+              category: 'outros',
+              servico: 'Fluxio',
+            });
+        }
+      } else if (existingFluxio && !subscribed) {
+        // Se não tem mais plano ativo, marcar como cancelada
+        await supabase
+          .from('subscriptions')
+          .update({
+            status: 'cancelled',
+          })
+          .eq('id', existingFluxio.id);
+      }
+    } catch (error) {
+      console.error('Error syncing Fluxio subscription:', error);
     }
   };
 
