@@ -68,13 +68,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (!user) return;
 
     try {
-      // Verificar se já existe uma assinatura do Fluxio
-      const { data: existingFluxio } = await supabase
+      // Buscar TODAS as assinaturas do Fluxio do usuário
+      const { data: allFluxioSubs } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
         .eq('name', 'Fluxio')
-        .maybeSingle();
+        .order('created_at', { ascending: false });
+
+      // Se houver múltiplas, deletar todas exceto a primeira (mais recente)
+      if (allFluxioSubs && allFluxioSubs.length > 1) {
+        const idsToDelete = allFluxioSubs.slice(1).map(sub => sub.id);
+        await supabase
+          .from('subscriptions')
+          .delete()
+          .in('id', idsToDelete);
+      }
+
+      // Pegar a assinatura existente (a mais recente)
+      const existingFluxio = allFluxioSubs && allFluxioSubs.length > 0 ? allFluxioSubs[0] : null;
 
       // Mapear planos para preços
       const planPrices: Record<string, number> = {
