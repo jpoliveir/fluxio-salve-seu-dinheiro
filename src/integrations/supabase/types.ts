@@ -125,14 +125,8 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: Json
       }
-      send_onboarding_reminders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      send_renewal_reminders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      send_onboarding_reminders: { Args: never; Returns: undefined }
+      send_renewal_reminders: { Args: never; Returns: undefined }
     }
     Enums: {
       subscription_category: "alimentacao" | "musica" | "streaming" | "outros"
