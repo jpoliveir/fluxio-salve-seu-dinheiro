@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw, Edit, AlertTriangle, Zap } from "lucide-react";
+import { Plus, Eye, EyeOff, LogOut, User, Crown, Menu, RefreshCw, Edit, AlertTriangle, Zap, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +17,16 @@ import { useEconomiaAssinaturas } from "@/hooks/useEconomiaAssinaturas";
 import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
 import { EconomiaDetalhesModal } from "@/components/EconomiaDetalhesModal";
 import { EditSubscriptionDialog } from "@/components/EditSubscriptionDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Subscription {
   id: string;
@@ -46,6 +56,7 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   
   const { economiaData, loading: economiaLoading, recalcular } = useEconomiaAssinaturas();
   const { isDuplicate, getDuplicateInfo, detectDuplicates } = useDuplicateDetection();
@@ -114,6 +125,32 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleDeleteAllSubscriptions = async () => {
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Todas as assinaturas foram removidas.",
+      });
+
+      setShowDeleteAllDialog(false);
+      await fetchSubscriptions();
+    } catch (error) {
+      console.error('Erro ao deletar assinaturas:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover assinaturas. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getUserDisplayName = () => {
@@ -451,6 +488,16 @@ export default function Dashboard() {
               >
                 Ver Planos
               </Button>
+              {subscriptions.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setShowDeleteAllDialog(true)}
+                >
+                  <Trash2 size={16} />
+                  Limpar Tudo
+                </Button>
+              )}
               <Button onClick={() => setShowAddDialog(true)}>
                 <Plus size={16} />
                 Adicionar
@@ -576,6 +623,26 @@ export default function Dashboard() {
         subscription={editingSubscription}
         onSuccess={handleEditSuccess}
       />
+
+      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente todas as suas {subscriptions.length} assinatura{subscriptions.length !== 1 ? 's' : ''}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAllSubscriptions}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, deletar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Modal de Planos */}
       {showPlans && (
