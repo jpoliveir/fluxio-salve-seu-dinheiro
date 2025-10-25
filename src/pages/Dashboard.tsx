@@ -129,16 +129,18 @@ export default function Dashboard() {
 
   const handleDeleteAllSubscriptions = async () => {
     try {
+      // Deletar todas as assinaturas EXCETO a do Fluxio
       const { error } = await supabase
         .from('subscriptions')
         .delete()
-        .eq('user_id', user?.id);
+        .eq('user_id', user?.id)
+        .neq('name', 'Fluxio');
 
       if (error) throw error;
 
       toast({
         title: "Sucesso",
-        description: "Todas as assinaturas foram removidas.",
+        description: "Todas as assinaturas foram removidas (mantendo apenas Fluxio).",
       });
 
       setShowDeleteAllDialog(false);
@@ -629,7 +631,7 @@ export default function Dashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente todas as suas {subscriptions.length} assinatura{subscriptions.length !== 1 ? 's' : ''}.
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente todas as suas assinaturas, exceto a assinatura do Fluxio que será mantida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
