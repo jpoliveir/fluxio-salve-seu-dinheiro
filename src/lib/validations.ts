@@ -36,8 +36,12 @@ export const subscriptionSchema = z.object({
     .max(100, { message: "Nome deve ter no máximo 100 caracteres" }),
   price: z
     .number()
-    .positive({ message: "Preço deve ser positivo" })
-    .max(999999, { message: "Preço máximo excedido" }),
+    .min(0.50, { message: "Preço mínimo é R$ 0,50" })
+    .max(9999.99, { message: "Preço máximo é R$ 9.999,99" })
+    .refine(
+      (val) => Number((val * 100).toFixed(0)) === val * 100,
+      { message: "Preço deve ter no máximo 2 casas decimais" }
+    ),
   category: z.enum(["alimentacao", "musica", "streaming", "outros"], {
     errorMap: () => ({ message: "Categoria inválida" }),
   }),

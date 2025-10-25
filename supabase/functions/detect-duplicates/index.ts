@@ -106,17 +106,16 @@ serve(async (req) => {
 
     const aiResponse = await response.json();
     const content = aiResponse.choices[0].message.content;
-    
-    console.log('[DETECT-DUPLICATES] AI response:', content);
 
     try {
       const duplicatesResult = JSON.parse(content);
+      console.log('[DETECT-DUPLICATES] Found', duplicatesResult.duplicates?.length || 0, 'duplicate groups');
       
       return new Response(JSON.stringify(duplicatesResult), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (parseError) {
-      console.error('[DETECT-DUPLICATES] Failed to parse AI response:', parseError);
+      console.error('[DETECT-DUPLICATES] Failed to parse AI response');
       return new Response(JSON.stringify({ duplicates: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
