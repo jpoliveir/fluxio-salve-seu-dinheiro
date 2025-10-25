@@ -490,7 +490,7 @@ export default function Dashboard() {
               >
                 Ver Planos
               </Button>
-              {subscriptions.length > 0 && (
+              {subscriptions.filter(sub => sub.name !== 'Fluxio').length > 0 && (
                 <Button 
                   variant="destructive" 
                   size="sm"
