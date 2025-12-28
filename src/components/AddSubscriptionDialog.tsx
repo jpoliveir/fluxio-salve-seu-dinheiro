@@ -200,6 +200,23 @@ export function AddSubscriptionDialog({
 
       if (error) throw error;
 
+      // Sync pricing data in background (don't wait for it)
+      supabase.functions.invoke('sync-pricing', {
+        body: {
+          subscriptionName: formData.name,
+          price: parseFloat(formData.price),
+          category: formData.category
+        }
+      }).then(response => {
+        if (response.data?.action === 'insert') {
+          console.log('[SYNC] New service added:', response.data.servico);
+        } else if (response.data?.action === 'update') {
+          console.log('[SYNC] Price updated:', response.data.servico, response.data.nome_plano);
+        }
+      }).catch(err => {
+        console.log('[SYNC] Background sync failed:', err);
+      });
+
       toast({
         title: "Sucesso",
         description: "Assinatura adicionada com sucesso!"
