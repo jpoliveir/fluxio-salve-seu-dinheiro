@@ -44,9 +44,17 @@ serve(async (req) => {
 
     console.log('[DETECT-DUPLICATES] Found subscriptions:', subscriptions.length);
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Se não há assinaturas suficientes, retornar vazio
+    if (subscriptions.length < 2) {
+      console.log('[DETECT-DUPLICATES] Not enough subscriptions to detect duplicates');
+      return new Response(JSON.stringify({ duplicates: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('Lovable API key not configured');
     }
 
     // Preparar dados para análise de IA
@@ -59,14 +67,14 @@ serve(async (req) => {
 
     console.log('[DETECT-DUPLICATES] Analyzing duplicates with AI');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'google/gemini-2.5-flash-lite',
         messages: [
           {
             role: 'system',
@@ -94,14 +102,14 @@ serve(async (req) => {
             content: `Analise estas assinaturas: ${JSON.stringify(subscriptionsData)}`
           }
         ],
-        max_completion_tokens: 1000,
+        max_tokens: 1000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[DETECT-DUPLICATES] OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('[DETECT-DUPLICATES] AI API error:', errorText);
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const aiResponse = await response.json();
