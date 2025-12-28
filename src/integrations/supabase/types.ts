@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      price_reports: {
+        Row: {
+          created_at: string
+          id: string
+          nome_plano: string
+          servico: string
+          user_id: string
+          valor_reportado: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_plano: string
+          servico: string
+          user_id: string
+          valor_reportado: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_plano?: string
+          servico?: string
+          user_id?: string
+          valor_reportado?: number
+        }
+        Relationships: []
+      }
+      price_suggestions: {
+        Row: {
+          applied: boolean
+          created_at: string
+          current_price: number
+          dismissed: boolean
+          id: string
+          nome_plano: string
+          servico: string
+          subscription_id: string
+          suggested_price: number
+          user_id: string
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          current_price: number
+          dismissed?: boolean
+          id?: string
+          nome_plano: string
+          servico: string
+          subscription_id: string
+          suggested_price: number
+          user_id: string
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          current_price?: number
+          dismissed?: boolean
+          id?: string
+          nome_plano?: string
+          servico?: string
+          subscription_id?: string
+          suggested_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_suggestions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -123,6 +197,10 @@ export type Database = {
     Functions: {
       calcular_economia_assinaturas: {
         Args: { user_id_param: string }
+        Returns: Json
+      }
+      get_price_consensus: {
+        Args: { p_nome_plano: string; p_servico: string; p_threshold?: number }
         Returns: Json
       }
       send_onboarding_reminders: { Args: never; Returns: undefined }

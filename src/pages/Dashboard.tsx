@@ -17,6 +17,8 @@ import { useEconomiaAssinaturas } from "@/hooks/useEconomiaAssinaturas";
 import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
 import { EconomiaDetalhesModal } from "@/components/EconomiaDetalhesModal";
 import { EditSubscriptionDialog } from "@/components/EditSubscriptionDialog";
+import { PriceUpdatePopup } from "@/components/PriceUpdatePopup";
+import { PriceSuggestionBanner } from "@/components/PriceSuggestionBanner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -363,6 +365,12 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Banner de sugestão de preço para todos os usuários */}
+        <PriceSuggestionBanner />
+
+        {/* Popup de atualização de preço para Premium/Ultimate */}
+        <PriceUpdatePopup onSubscriptionUpdated={fetchSubscriptions} />
+
         {/* Cards principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>

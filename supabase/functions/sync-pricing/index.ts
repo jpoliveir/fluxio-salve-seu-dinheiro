@@ -7,16 +7,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const CONSENSUS_THRESHOLD = 0.35; // 35% of users must report same price
+const MIN_REPORTS = 3; // Minimum reports needed to consider consensus
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { subscriptionName, price, category } = await req.json();
+    const { subscriptionName, price, category, userId, subscriptionId } = await req.json();
     
-    console.log('[SYNC-PRICING] Received subscription:', { subscriptionName, price, category });
+    console.log('[SYNC-PRICING] Received:', { subscriptionName, price, category });
 
     if (!subscriptionName || !price) {
       return new Response(
@@ -34,50 +36,39 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role for admin operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch current services from servicos_planos
+    // Fetch current services
     const { data: currentServices, error: fetchError } = await supabase
       .from('servicos_planos')
       .select('servico, nome_plano, valor');
 
     if (fetchError) {
-      console.error('[SYNC-PRICING] Error fetching current services:', fetchError);
+      console.error('[SYNC-PRICING] Error fetching services:', fetchError);
       throw fetchError;
     }
 
-    console.log('[SYNC-PRICING] Current services count:', currentServices?.length || 0);
+    // Use AI to identify service and plan
+    const aiPrompt = `Identifique o serviço e plano baseado no nome da assinatura.
 
-    // Use AI to analyze the subscription and determine updates
-    const aiPrompt = `Analise a seguinte assinatura cadastrada por um usuário e determine se devemos atualizar nossa base de preços.
+ASSINATURA: "${subscriptionName}"
+PREÇO: R$ ${price}
+CATEGORIA: ${category || 'não informada'}
 
-ASSINATURA DO USUÁRIO:
-- Nome: "${subscriptionName}"
-- Preço informado: R$ ${price}
-- Categoria: ${category || 'não informada'}
+SERVIÇOS NA BASE:
+${JSON.stringify(currentServices?.map(s => ({ servico: s.servico, plano: s.nome_plano })) || [], null, 2)}
 
-NOSSA BASE DE SERVIÇOS ATUAL:
-${JSON.stringify(currentServices, null, 2)}
-
-INSTRUÇÕES:
-1. Identifique o serviço e plano baseado no nome da assinatura
-2. Se o serviço existe na base, verifique se o preço está desatualizado (diferença > R$2)
-3. Se é um serviço novo e popular (streaming, música, jogos, produtividade), adicione-o
-
-Responda APENAS com um JSON válido no seguinte formato:
+Responda APENAS com JSON válido:
 {
-  "action": "update" | "insert" | "none",
-  "servico": "Nome do Serviço",
-  "nome_plano": "Nome do Plano",
-  "valor": 00.00,
-  "reason": "Motivo da decisão"
+  "servico": "Nome do Serviço (exato como na base ou novo)",
+  "nome_plano": "Nome do Plano (ex: Básico, Padrão, Premium)",
+  "is_new_service": true/false,
+  "confidence": 0.0-1.0
 }
 
-Exemplos de serviços populares para adicionar: Max (antigo HBO Max), Apple TV+, Paramount+, Crunchyroll, Mubi, etc.
-Se não conseguir identificar o serviço ou não for relevante, use action: "none".`;
+Se não conseguir identificar, use confidence: 0.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -88,10 +79,7 @@ Se não conseguir identificar o serviço ou não for relevante, use action: "non
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-lite',
         messages: [
-          {
-            role: 'system',
-            content: 'Você é um assistente especializado em serviços de streaming e assinaturas digitais no Brasil. Analise os dados e retorne APENAS JSON válido, sem markdown ou texto adicional.'
-          },
+          { role: 'system', content: 'Você identifica serviços de streaming/assinaturas. Retorne APENAS JSON válido.' },
           { role: 'user', content: aiPrompt }
         ],
       }),
@@ -99,18 +87,12 @@ Se não conseguir identificar o serviço ou não for relevante, use action: "non
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('[SYNC-PRICING] AI API error:', aiResponse.status, errorText);
+      console.error('[SYNC-PRICING] AI error:', aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ success: false, message: 'Rate limit exceeded, try again later' }),
+          JSON.stringify({ success: false, message: 'Rate limit exceeded' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'AI credits exhausted' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -118,120 +100,226 @@ Se não conseguir identificar o serviço ou não for relevante, use action: "non
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    let content = aiData.choices?.[0]?.message?.content?.trim() || '';
     
-    console.log('[SYNC-PRICING] AI raw response:', content);
-
-    if (!content) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Empty AI response' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Clean markdown
+    if (content.startsWith('```json')) {
+      content = content.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (content.startsWith('```')) {
+      content = content.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    // Parse AI response - clean markdown if present
-    let decision;
+    let identification;
     try {
-      let cleanContent = content.trim();
-      // Remove markdown code blocks if present
-      if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
-      decision = JSON.parse(cleanContent);
-    } catch (parseError) {
-      console.error('[SYNC-PRICING] Failed to parse AI response:', parseError);
+      identification = JSON.parse(content);
+    } catch (e) {
+      console.error('[SYNC-PRICING] Parse error:', e, content);
       return new Response(
-        JSON.stringify({ success: false, message: 'Invalid AI response format' }),
+        JSON.stringify({ success: false, message: 'Could not identify service' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[SYNC-PRICING] AI decision:', decision);
+    console.log('[SYNC-PRICING] AI identification:', identification);
 
-    // Execute the action
-    if (decision.action === 'none') {
+    if (identification.confidence < 0.5) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          action: 'none', 
-          message: decision.reason || 'No update needed' 
-        }),
+        JSON.stringify({ success: true, action: 'none', message: 'Low confidence identification' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (decision.action === 'update') {
-      // Update existing price
-      const { error: updateError } = await supabase
-        .from('servicos_planos')
-        .update({ valor: decision.valor, updated_at: new Date().toISOString() })
-        .eq('servico', decision.servico)
-        .eq('nome_plano', decision.nome_plano);
+    const { servico, nome_plano, is_new_service } = identification;
 
-      if (updateError) {
-        console.error('[SYNC-PRICING] Update error:', updateError);
-        throw updateError;
-      }
-
-      console.log('[SYNC-PRICING] Updated price:', decision);
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          action: 'update',
-          servico: decision.servico,
-          nome_plano: decision.nome_plano,
-          novo_valor: decision.valor,
-          message: decision.reason 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (decision.action === 'insert') {
-      // Insert new service
-      const { error: insertError } = await supabase
-        .from('servicos_planos')
+    // Record the price report
+    if (userId) {
+      const { error: reportError } = await supabase
+        .from('price_reports')
         .insert({
-          servico: decision.servico,
-          nome_plano: decision.nome_plano,
-          valor: decision.valor
+          user_id: userId,
+          servico,
+          nome_plano,
+          valor_reportado: price
         });
 
-      if (insertError) {
-        // Ignore duplicate key errors
-        if (insertError.code === '23505') {
-          console.log('[SYNC-PRICING] Service already exists, skipping insert');
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              action: 'none',
-              message: 'Service already exists' 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        console.error('[SYNC-PRICING] Insert error:', insertError);
-        throw insertError;
+      if (reportError && reportError.code !== '23505') {
+        console.error('[SYNC-PRICING] Report insert error:', reportError);
+      }
+    }
+
+    // Check consensus for existing services
+    if (!is_new_service) {
+      // Get all reports for this service/plan
+      const { data: reports, error: reportsError } = await supabase
+        .from('price_reports')
+        .select('valor_reportado')
+        .eq('servico', servico)
+        .eq('nome_plano', nome_plano)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (reportsError) {
+        console.error('[SYNC-PRICING] Reports fetch error:', reportsError);
       }
 
-      console.log('[SYNC-PRICING] Inserted new service:', decision);
+      const totalReports = reports?.length || 0;
+      
+      if (totalReports >= MIN_REPORTS) {
+        // Count occurrences of each price
+        const priceCounts: Record<string, number> = {};
+        reports?.forEach(r => {
+          const key = r.valor_reportado.toString();
+          priceCounts[key] = (priceCounts[key] || 0) + 1;
+        });
+
+        // Find most common price
+        let mostCommonPrice = 0;
+        let mostCommonCount = 0;
+        Object.entries(priceCounts).forEach(([priceStr, count]) => {
+          if (count > mostCommonCount) {
+            mostCommonCount = count;
+            mostCommonPrice = parseFloat(priceStr);
+          }
+        });
+
+        const consensusPercentage = mostCommonCount / totalReports;
+        console.log('[SYNC-PRICING] Consensus check:', { totalReports, mostCommonPrice, consensusPercentage });
+
+        // Get current price
+        const currentService = currentServices?.find(s => s.servico === servico && s.nome_plano === nome_plano);
+        const currentPrice = currentService?.valor || 0;
+
+        if (consensusPercentage >= CONSENSUS_THRESHOLD && Math.abs(mostCommonPrice - currentPrice) > 2) {
+          // Update the price in servicos_planos
+          const { error: updateError } = await supabase
+            .from('servicos_planos')
+            .update({ valor: mostCommonPrice, updated_at: new Date().toISOString() })
+            .eq('servico', servico)
+            .eq('nome_plano', nome_plano);
+
+          if (updateError) {
+            console.error('[SYNC-PRICING] Update error:', updateError);
+          } else {
+            console.log('[SYNC-PRICING] Price updated via consensus:', { servico, nome_plano, oldPrice: currentPrice, newPrice: mostCommonPrice });
+
+            // Create suggestions for affected users
+            const { data: affectedSubs } = await supabase
+              .from('subscriptions')
+              .select('id, user_id, price')
+              .eq('servico', servico)
+              .neq('price', mostCommonPrice);
+
+            if (affectedSubs && affectedSubs.length > 0) {
+              const suggestions = affectedSubs.map(sub => ({
+                user_id: sub.user_id,
+                subscription_id: sub.id,
+                servico,
+                nome_plano,
+                current_price: sub.price,
+                suggested_price: mostCommonPrice
+              }));
+
+              await supabase
+                .from('price_suggestions')
+                .upsert(suggestions, { onConflict: 'user_id,subscription_id,suggested_price' });
+            }
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                action: 'updated',
+                servico,
+                nome_plano,
+                old_price: currentPrice,
+                new_price: mostCommonPrice,
+                consensus: Math.round(consensusPercentage * 100)
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          action: 'insert',
-          servico: decision.servico,
-          nome_plano: decision.nome_plano,
-          valor: decision.valor,
-          message: decision.reason 
+        JSON.stringify({
+          success: true,
+          action: 'reported',
+          servico,
+          nome_plano,
+          total_reports: totalReports,
+          message: totalReports < MIN_REPORTS 
+            ? `Aguardando mais ${MIN_REPORTS - totalReports} relatórios para consenso`
+            : 'Preço registrado, aguardando consenso de 35%'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle new service - only add after consensus
+    if (is_new_service) {
+      const { data: newServiceReports } = await supabase
+        .from('price_reports')
+        .select('valor_reportado')
+        .eq('servico', servico)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      const totalNewReports = newServiceReports?.length || 0;
+
+      if (totalNewReports >= MIN_REPORTS) {
+        // Check consensus for new service
+        const priceCounts: Record<string, number> = {};
+        newServiceReports?.forEach(r => {
+          const key = r.valor_reportado.toString();
+          priceCounts[key] = (priceCounts[key] || 0) + 1;
+        });
+
+        let mostCommonPrice = 0;
+        let mostCommonCount = 0;
+        Object.entries(priceCounts).forEach(([priceStr, count]) => {
+          if (count > mostCommonCount) {
+            mostCommonCount = count;
+            mostCommonPrice = parseFloat(priceStr);
+          }
+        });
+
+        const consensusPercentage = mostCommonCount / totalNewReports;
+
+        if (consensusPercentage >= CONSENSUS_THRESHOLD) {
+          const { error: insertError } = await supabase
+            .from('servicos_planos')
+            .insert({ servico, nome_plano, valor: mostCommonPrice });
+
+          if (!insertError) {
+            console.log('[SYNC-PRICING] New service added via consensus:', { servico, nome_plano, price: mostCommonPrice });
+            return new Response(
+              JSON.stringify({
+                success: true,
+                action: 'inserted',
+                servico,
+                nome_plano,
+                valor: mostCommonPrice,
+                consensus: Math.round(consensusPercentage * 100)
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          action: 'pending_new',
+          servico,
+          nome_plano,
+          total_reports: totalNewReports,
+          message: `Novo serviço detectado, aguardando ${MIN_REPORTS} relatórios para adicionar`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, action: 'none', message: 'No action taken' }),
+      JSON.stringify({ success: true, action: 'none' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
