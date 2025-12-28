@@ -205,13 +205,16 @@ export function AddSubscriptionDialog({
         body: {
           subscriptionName: formData.name,
           price: parseFloat(formData.price),
-          category: formData.category
+          category: formData.category,
+          userId: user.id
         }
       }).then(response => {
-        if (response.data?.action === 'insert') {
-          console.log('[SYNC] New service added:', response.data.servico);
-        } else if (response.data?.action === 'update') {
-          console.log('[SYNC] Price updated:', response.data.servico, response.data.nome_plano);
+        if (response.data?.action === 'inserted') {
+          console.log('[SYNC] New service added via consensus:', response.data.servico);
+        } else if (response.data?.action === 'updated') {
+          console.log('[SYNC] Price updated via consensus:', response.data.servico, response.data.nome_plano);
+        } else if (response.data?.action === 'reported') {
+          console.log('[SYNC] Price reported:', response.data.message);
         }
       }).catch(err => {
         console.log('[SYNC] Background sync failed:', err);
