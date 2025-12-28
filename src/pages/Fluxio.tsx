@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowRight, Check, Clock, Zap, LogOut, User, LogIn } from "lucide-react";
@@ -9,9 +9,20 @@ import { Link } from "react-router-dom";
 
 export default function Fluxio() {
   const { user, signOut } = useAuth();
+  const [highlightPricing, setHighlightPricing] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const scrollToPricing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const pricingSection = document.getElementById('precos');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightPricing(true);
+      setTimeout(() => setHighlightPricing(false), 1500);
+    }
   };
 
   return (
@@ -35,7 +46,7 @@ export default function Fluxio() {
         </div>
         <nav className="hidden md:flex gap-4 items-center">
           <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#recursos">Recursos</a>
-          <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#precos">Preços</a>
+          <a className="text-sm text-muted-foreground hover:text-foreground story-link cursor-pointer" onClick={scrollToPricing}>Preços</a>
           <a className="text-sm text-muted-foreground hover:text-foreground story-link" href="#ajuda">Ajuda</a>
           {user ? (
             <div className="flex items-center gap-2 ml-2">
@@ -136,10 +147,10 @@ export default function Fluxio() {
                 </CardContent>
               </Card>
 
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <PlanPill title="Free" price="Grátis" bullets={["Manual", "Alertas", "Comparativos"]} />
-                <PlanPill title="Premium" price="R$14,90/mês" bullets={["Open Finance", "Sugestões"]} highlight />
-                <PlanPill title="Ultimate" price="R$29,90/mês" bullets={["Economia automática", "Comparador", "Relatórios"]} />
+              <div id="precos" className={`mt-4 grid grid-cols-3 gap-3 transition-all duration-500 ${highlightPricing ? 'ring-2 ring-brand ring-offset-2 ring-offset-background rounded-lg scale-105' : ''}`}>
+                <PlanPill title="Free" price="Grátis" bullets={["Manual", "Alertas", "Comparativos"]} highlight={highlightPricing} />
+                <PlanPill title="Premium" price="R$14,90/mês" bullets={["Open Finance", "Sugestões"]} highlight={highlightPricing} />
+                <PlanPill title="Ultimate" price="R$29,90/mês" bullets={["Economia automática", "Comparador", "Relatórios"]} highlight={highlightPricing} />
               </div>
             </div>
           </motion.div>
@@ -232,7 +243,7 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 
 function PlanPill({ title, price, bullets, highlight }: { title: string; price: string; bullets: string[]; highlight?: boolean }) {
   return (
-    <div className={`rounded-lg p-3 text-center border ${highlight ? "border-brand/30 bg-brand/5" : "bg-card"}`}>
+    <div className={`rounded-lg p-3 text-center border transition-all duration-500 ${highlight ? "border-brand bg-brand/10 shadow-lg shadow-brand/20 scale-105" : "bg-card"}`}>
       <div className="text-sm font-medium">{title}</div>
       <div className="text-sm font-semibold">{price}</div>
       <div className="mt-2 text-xs text-muted-foreground">{bullets.join(" • ")}</div>
