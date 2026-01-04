@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Crown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Check, Crown, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,7 @@ const plans = [
     name: "Free",
     price: "R$ 0",
     period: "/mês",
-    priceId: null,
+    kiwifyUrl: null,
     features: [
       "Controle básico de assinaturas",
       "Até 5 assinaturas",
@@ -23,7 +22,7 @@ const plans = [
     name: "Premium",
     price: "R$ 14,90",
     period: "/mês",
-    priceId: "price_1Rul1ZEiY5JS2SCypJ3LSWMR",
+    kiwifyUrl: "https://pay.kiwify.com.br/ZR58V3S",
     features: [
       "Assinaturas ilimitadas",
       "Análise de economia potencial",
@@ -36,7 +35,7 @@ const plans = [
     name: "Ultimate",
     price: "R$ 29,90",
     period: "/mês",
-    priceId: "price_1RwCy9EiY5JS2SCytQ3gBFn5",
+    kiwifyUrl: "https://pay.kiwify.com.br/53f1YYG",
     features: [
       "Todos os recursos Premium",
       "Múltiplos usuários",
@@ -48,13 +47,13 @@ const plans = [
 ];
 
 export function SubscriptionPlans() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const { plan, checkSubscription } = useSubscription();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = async (planName: string, priceId: string) => {
-    if (!session) {
+  const handleSubscribe = (planName: string, kiwifyUrl: string) => {
+    if (!session || !user) {
       toast({
         title: "Erro",
         description: "Você precisa estar logado para assinar um plano.",
@@ -65,38 +64,29 @@ export function SubscriptionPlans() {
 
     setLoading(planName);
 
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          priceId,
-          planName
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+    // Construir URL com email do usuário para pré-preencher no Kiwify
+    const urlWithEmail = `${kiwifyUrl}?email=${encodeURIComponent(user.email || '')}`;
+    
+    // Abrir Kiwify checkout em nova aba
+    window.open(urlWithEmail, '_blank');
+    
+    toast({
+      title: "Redirecionando para pagamento",
+      description: "Complete o pagamento na Kiwify. Sua assinatura será ativada automaticamente.",
+    });
 
-      if (error) throw error;
+    // Verificar status da assinatura periodicamente
+    const checkInterval = setInterval(() => {
+      checkSubscription();
+    }, 10000); // Verifica a cada 10 segundos
 
-      // Abrir Stripe checkout em nova aba
-      if (data.url) {
-        window.open(data.url, '_blank');
-        
-        // Verificar status da assinatura após alguns segundos
-        setTimeout(() => {
-          checkSubscription();
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao processar pagamento. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
+    // Parar de verificar após 5 minutos
+    setTimeout(() => {
+      clearInterval(checkInterval);
       setLoading(null);
-    }
+    }, 300000);
+
+    setLoading(null);
   };
 
   return (
@@ -136,8 +126,8 @@ export function SubscriptionPlans() {
               
               {!isFree && (
                 <Button 
-                  className="w-full"
-                  onClick={() => handleSubscribe(planData.name, planData.priceId!)}
+                  className="w-full gap-2"
+                  onClick={() => handleSubscribe(planData.name, planData.kiwifyUrl!)}
                   disabled={isCurrentPlan || loading === planData.name}
                   variant={isCurrentPlan ? "outline" : "default"}
                 >
@@ -145,7 +135,12 @@ export function SubscriptionPlans() {
                     ? "Processando..." 
                     : isCurrentPlan 
                       ? "Plano Atual" 
-                      : `Assinar ${planData.name}`
+                      : (
+                        <>
+                          Assinar {planData.name}
+                          <ExternalLink size={14} />
+                        </>
+                      )
                   }
                 </Button>
               )}

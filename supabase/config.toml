@@ -41,9 +41,6 @@ enable_email_confirmations = false
 enabled = true
 port = 54329
 
-[functions.create-checkout]
-verify_jwt = true
-
 [functions.check-subscription]
 verify_jwt = true
 
@@ -58,3 +55,6 @@ verify_jwt = false
 
 [functions.sync-pricing]
 verify_jwt = true
+
+[functions.kiwify-webhook]
+verify_jwt = false
