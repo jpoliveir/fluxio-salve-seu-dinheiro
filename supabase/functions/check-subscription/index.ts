@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Helper logging function for enhanced debugging
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
@@ -38,60 +36,48 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      logStep("No customer found, returning free plan");
-      return new Response(JSON.stringify({ subscribed: false, plan: 'free' }), {
+    // Buscar assinatura ativa do Kiwify
+    const { data: kiwifySub, error: kiwifyError } = await supabaseClient
+      .from('kiwify_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (kiwifyError) {
+      logStep("Error fetching Kiwify subscription", { error: kiwifyError.message });
+      throw kiwifyError;
+    }
+
+    if (kiwifySub && kiwifySub.length > 0) {
+      const subscription = kiwifySub[0];
+      const plan = subscription.plan === 'ultimate' ? 'enterprise' : subscription.plan;
+      
+      logStep("Active Kiwify subscription found", { 
+        id: subscription.id, 
+        plan: subscription.plan,
+        mappedPlan: plan
+      });
+      
+      return new Response(JSON.stringify({ 
+        subscribed: true, 
+        plan: plan 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-    
-    const hasActiveSub = subscriptions.data.length > 0;
-    let plan = 'free';
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      logStep("Active subscription found", { subscriptionId: subscription.id });
-      
-      const priceId = subscription.items.data[0].price.id;
-      const price = await stripe.prices.retrieve(priceId);
-      const amount = price.unit_amount || 0;
-      logStep("Checking price amount", { priceId, amount });
-      
-      // Valores corretos: Premium R$ 14,90 = 1490 centavos, Ultimate R$ 29,90 = 2990 centavos
-      if (amount === 1490) {
-        plan = "premium";
-      } else if (amount === 2990) {
-        plan = "enterprise";
-      } else {
-        plan = "free";
-        logStep("Unknown price amount, defaulting to free", { amount });
-      }
-      logStep("Determined plan", { plan, amount });
-    } else {
-      logStep("No active subscription found");
-    }
-
-    logStep("Returning result", { subscribed: hasActiveSub, plan });
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      plan: plan
+    logStep("No active subscription found, returning free plan");
+    return new Response(JSON.stringify({ 
+      subscribed: false, 
+      plan: 'free' 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-subscription", { message: errorMessage });
