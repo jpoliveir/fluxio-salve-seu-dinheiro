@@ -134,6 +134,7 @@ export type Database = {
           display_name: string | null
           id: string
           last_onboarding_reminder_sent: string | null
+          last_winback_email_sent: string | null
           updated_at: string
         }
         Insert: {
@@ -142,6 +143,7 @@ export type Database = {
           display_name?: string | null
           id: string
           last_onboarding_reminder_sent?: string | null
+          last_winback_email_sent?: string | null
           updated_at?: string
         }
         Update: {
@@ -150,6 +152,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           last_onboarding_reminder_sent?: string | null
+          last_winback_email_sent?: string | null
           updated_at?: string
         }
         Relationships: []
