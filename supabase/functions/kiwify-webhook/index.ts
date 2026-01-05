@@ -149,6 +149,125 @@ async function sendWelcomeEmail(email: string, plan: string, userName?: string) 
   }
 }
 
+async function sendCancellationEmail(email: string, plan: string, reason: string, userName?: string) {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendApiKey) {
+    logStep("RESEND_API_KEY not configured, skipping cancellation email");
+    return;
+  }
+
+  const resend = new Resend(resendApiKey);
+  const planName = PLAN_NAMES[plan] || plan;
+  const features = PLAN_FEATURES[plan] || [];
+  const displayName = userName || email.split('@')[0];
+
+  const reasonText = reason === 'cancelled' 
+    ? 'foi cancelada' 
+    : reason === 'expired' 
+      ? 'expirou' 
+      : 'foi encerrada';
+
+  const featuresHtml = features.map(f => `<li style="margin-bottom: 8px;">❌ ${f}</li>`).join('');
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Fluxio <noreply@resend.dev>",
+      to: [email],
+      subject: `😢 Sua assinatura Fluxio ${planName} ${reasonText}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                  <!-- Header -->
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 30px; text-align: center;">
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
+                        😢 Sentiremos sua falta
+                      </h1>
+                      <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                        Sua assinatura ${planName} ${reasonText}
+                      </p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      <h2 style="color: #18181b; margin: 0 0 20px 0; font-size: 22px;">
+                        Olá, ${displayName}
+                      </h2>
+                      
+                      <p style="color: #52525b; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                        Lamentamos informar que sua assinatura <strong>Fluxio ${planName}</strong> ${reasonText}. Você não terá mais acesso aos seguintes benefícios exclusivos:
+                      </p>
+                      
+                      <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; margin-bottom: 25px; border: 1px solid #fecaca;">
+                        <h3 style="color: #991b1b; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">
+                          🚫 Benefícios que você perdeu:
+                        </h3>
+                        <ul style="color: #7f1d1d; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 0; list-style: none;">
+                          ${featuresHtml}
+                        </ul>
+                      </div>
+                      
+                      <p style="color: #52525b; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                        Se você mudou de ideia ou cancelou por engano, é fácil reativar sua assinatura e voltar a economizar com o Fluxio!
+                      </p>
+                      
+                      <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center">
+                            <a href="https://fluxio.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                              Reativar Assinatura →
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="color: #71717a; font-size: 14px; line-height: 1.6; margin: 25px 0 0 0; text-align: center;">
+                        Você ainda pode usar o Fluxio gratuitamente com funcionalidades limitadas.
+                      </p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color: #f4f4f5; padding: 25px 30px; text-align: center; border-top: 1px solid #e4e4e7;">
+                      <p style="color: #71717a; font-size: 14px; margin: 0 0 10px 0;">
+                        Precisa de ajuda ou tem dúvidas? Responda este email.
+                      </p>
+                      <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
+                        © 2025 Fluxio. Todos os direitos reservados.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      logStep("Error sending cancellation email", { error });
+    } else {
+      logStep("Cancellation email sent successfully", { emailId: data?.id });
+    }
+  } catch (error) {
+    logStep("Exception sending cancellation email", { error: String(error) });
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -297,6 +416,13 @@ serve(async (req) => {
     if (shouldSendWelcomeEmail) {
       logStep("Sending welcome email");
       await sendWelcomeEmail(customerEmail, plan, customerName);
+    }
+
+    // Enviar email de cancelamento
+    const isCancellation = subscriptionStatus === 'cancelled' || subscriptionStatus === 'expired' || subscriptionStatus === 'refunded';
+    if (isCancellation && existingSub && existingSub.length > 0 && existingSub[0].status === 'active') {
+      logStep("Sending cancellation email");
+      await sendCancellationEmail(customerEmail, plan, subscriptionStatus, customerName);
     }
 
     logStep("Webhook processed successfully");
