@@ -26,7 +26,7 @@ serve(async (req) => {
       method: "POST",
       headers: { "access_token": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        billingTypes: ["PIX", "CREDIT_CARD"],
+        billingTypes: ["CREDIT_CARD"],
         chargeTypes: ["RECURRENT"],
         minutesToExpire: 60,
         callback: {
