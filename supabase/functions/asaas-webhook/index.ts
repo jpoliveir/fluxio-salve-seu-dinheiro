@@ -49,8 +49,7 @@ serve(async (req) => {
 
     // A Asaas envia o token configurado no header "asaas-access-token" em
     // TODA notificação. Sem essa checagem, qualquer requisição forjada
-    // seria processada como um pagamento real (mesma falha que existia
-    // no webhook do Kiwify antes da correção).
+    // seria processada como um pagamento real.
     const webhookSecret = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
     const receivedToken = req.headers.get("asaas-access-token");
 
