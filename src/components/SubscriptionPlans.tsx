@@ -5,13 +5,14 @@ import { Check, Crown, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const plans = [
   {
     name: "Free",
     price: "R$ 0",
     period: "/mês",
-    kiwifyUrl: null,
+    planId: null,
     features: [
       "Controle básico de assinaturas",
       "Até 5 assinaturas",
@@ -22,7 +23,7 @@ const plans = [
     name: "Premium",
     price: "R$ 14,90",
     period: "/mês",
-    kiwifyUrl: "https://pay.kiwify.com.br/ZR58V3S",
+    planId: "premium",
     features: [
       "Assinaturas ilimitadas",
       "Análise de economia potencial",
@@ -35,7 +36,7 @@ const plans = [
     name: "Ultimate",
     price: "R$ 29,90",
     period: "/mês",
-    kiwifyUrl: "https://pay.kiwify.com.br/53f1YYG",
+    planId: "enterprise",
     features: [
       "Todos os recursos Premium",
       "Múltiplos usuários",
@@ -52,7 +53,7 @@ export function SubscriptionPlans() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = (planName: string, kiwifyUrl: string) => {
+  const handleSubscribe = async (planName: string, planId: string) => {
     if (!session || !user) {
       toast({
         title: "Erro",
@@ -64,29 +65,44 @@ export function SubscriptionPlans() {
 
     setLoading(planName);
 
-    // Construir URL com email do usuário para pré-preencher no Kiwify
-    const urlWithEmail = `${kiwifyUrl}?email=${encodeURIComponent(user.email || '')}`;
-    
-    // Abrir Kiwify checkout em nova aba
-    window.open(urlWithEmail, '_blank');
-    
-    toast({
-      title: "Redirecionando para pagamento",
-      description: "Complete o pagamento na Kiwify. Sua assinatura será ativada automaticamente.",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan: planId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-    // Verificar status da assinatura periodicamente
-    const checkInterval = setInterval(() => {
-      checkSubscription();
-    }, 10000); // Verifica a cada 10 segundos
+      if (error || !data?.url) {
+        throw new Error(error?.message || "Não foi possível gerar o link de pagamento.");
+      }
 
-    // Parar de verificar após 5 minutos
-    setTimeout(() => {
-      clearInterval(checkInterval);
+      // Abrir checkout da Asaas em nova aba
+      window.open(data.url, '_blank');
+
+      toast({
+        title: "Redirecionando para pagamento",
+        description: "Complete o pagamento na Asaas. Sua assinatura será ativada automaticamente.",
+      });
+
+      // Verificar status da assinatura periodicamente
+      const checkInterval = setInterval(() => {
+        checkSubscription();
+      }, 10000); // Verifica a cada 10 segundos
+
+      // Parar de verificar após 5 minutos
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 300000);
+    } catch (err) {
+      toast({
+        title: "Erro ao iniciar pagamento",
+        description: err instanceof Error ? err.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(null);
-    }, 300000);
-
-    setLoading(null);
+    }
   };
 
   return (
@@ -127,7 +143,7 @@ export function SubscriptionPlans() {
               {!isFree && (
                 <Button 
                   className="w-full gap-2"
-                  onClick={() => handleSubscribe(planData.name, planData.kiwifyUrl!)}
+                  onClick={() => handleSubscribe(planData.name, planData.planId!)}
                   disabled={isCurrentPlan || loading === planData.name}
                   variant={isCurrentPlan ? "outline" : "default"}
                 >

@@ -17,7 +17,7 @@ export default function PaymentSuccess() {
   useEffect(() => {
     const verifySubscription = async () => {
       try {
-        // Aguarda um pouco para o Stripe processar
+        // Aguarda um pouco para a Asaas processar
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Força verificação da assinatura

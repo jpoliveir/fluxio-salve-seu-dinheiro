@@ -36,25 +36,25 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Buscar assinatura ativa do Kiwify
-    const { data: kiwifySub, error: kiwifyError } = await supabaseClient
-      .from('kiwify_subscriptions')
+    // Buscar assinatura ativa na Asaas
+    const { data: asaasSub, error: asaasError } = await supabaseClient
+      .from('asaas_subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1);
 
-    if (kiwifyError) {
-      logStep("Error fetching Kiwify subscription", { error: kiwifyError.message });
-      throw kiwifyError;
+    if (asaasError) {
+      logStep("Error fetching Asaas subscription", { error: asaasError.message });
+      throw asaasError;
     }
 
-    if (kiwifySub && kiwifySub.length > 0) {
-      const subscription = kiwifySub[0];
+    if (asaasSub && asaasSub.length > 0) {
+      const subscription = asaasSub[0];
       const plan = subscription.plan === 'ultimate' ? 'enterprise' : subscription.plan;
       
-      logStep("Active Kiwify subscription found", { 
+      logStep("Active Asaas subscription found", { 
         id: subscription.id, 
         plan: subscription.plan,
         mappedPlan: plan

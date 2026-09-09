@@ -56,8 +56,11 @@ verify_jwt = false
 [functions.sync-pricing]
 verify_jwt = true
 
-[functions.kiwify-webhook]
+[functions.asaas-webhook]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = true
 
 [functions.send-winback-emails]
 verify_jwt = false

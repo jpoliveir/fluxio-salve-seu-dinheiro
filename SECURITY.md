@@ -160,6 +160,11 @@ Para reportar vulnerabilidades de segurança:
 
 ## Atualizações
 
+- **2026-09-09**: Consolidação de gateway de pagamento e correções de segurança
+  - Removidos Stripe e Kiwify; Asaas passa a ser o único gateway de pagamento
+  - Webhook da Asaas valida o header `asaas-access-token` contra `ASAAS_WEBHOOK_TOKEN` (o antigo webhook da Kiwify não validava a assinatura recebida)
+  - Corrigida policy de `price_suggestions` que permitia INSERT de qualquer usuário autenticado em nome de outros
+  - `.env` removido do versionamento; `.env.example` adicionado como referência
 - **2025-10-11**: Implementação inicial de segurança
   - RLS policies
   - Validação de inputs
