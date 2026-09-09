@@ -35,7 +35,7 @@ serve(async (req) => {
           expiredUrl: "https://fluxio-salve-seu-dinheiro.lovable.app/payment-canceled",
         },
         items: [{ name: "Fluxio Premium - teste", description: "Fluxio Premium - teste", quantity: 1, value: 14.90 }],
-        subscription: { cycle: "MONTHLY" },
+        subscription: { cycle: "MONTHLY", nextDueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10) },
         externalReference: "selftest:premium",
       }),
     });
