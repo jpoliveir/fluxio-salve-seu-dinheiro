@@ -175,9 +175,9 @@ serve(async (req) => {
 
     logStep("Found users", { count: users.users.length });
 
-    // Buscar todas as assinaturas Kiwify
+    // Buscar todas as assinaturas
     const { data: allSubscriptions, error: subsError } = await supabaseClient
-      .from('kiwify_subscriptions')
+      .from('asaas_subscriptions')
       .select('*');
 
     if (subsError) {

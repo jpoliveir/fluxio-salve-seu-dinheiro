@@ -141,7 +141,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     checkSubscription();
   }, [user, session]);
 
-  // Verificação automática adicional quando há mudanças de rota (para capturar retornos do Stripe)
+  // Verificação automática adicional quando há mudanças de rota (para capturar retornos do checkout de pagamento)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user && session) {
