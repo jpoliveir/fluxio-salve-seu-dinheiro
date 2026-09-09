@@ -64,3 +64,6 @@ verify_jwt = true
 
 [functions.send-winback-emails]
 verify_jwt = false
+
+[functions.asaas-selftest]
+verify_jwt = false
