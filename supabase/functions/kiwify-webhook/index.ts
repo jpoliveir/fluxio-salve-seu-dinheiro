@@ -268,6 +268,16 @@ async function sendCancellationEmail(email: string, plan: string, reason: string
   }
 }
 
+// Comparação em tempo constante para evitar timing attacks
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -282,12 +292,31 @@ serve(async (req) => {
   try {
     logStep("Webhook received");
 
-    const signature = req.headers.get("x-kiwify-signature");
+    // A Kiwify autentica o webhook clássico anexando o token configurado
+    // no painel como parâmetro "signature" na própria URL cadastrada.
+    // Sem essa checagem, qualquer requisição forjada era processada como
+    // um pagamento real.
     const webhookSecret = Deno.env.get("KIWIFY_WEBHOOK_SECRET");
-    
-    if (webhookSecret && signature) {
-      logStep("Signature received", { signature: signature?.substring(0, 20) + "..." });
+    const url = new URL(req.url);
+    const receivedSignature = url.searchParams.get("signature") ?? req.headers.get("x-kiwify-signature");
+
+    if (!webhookSecret) {
+      logStep("KIWIFY_WEBHOOK_SECRET não configurado - rejeitando por segurança");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
+
+    if (!receivedSignature || !timingSafeEqual(receivedSignature, webhookSecret)) {
+      logStep("Assinatura inválida ou ausente - requisição rejeitada");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    logStep("Assinatura validada com sucesso");
 
     const body = await req.json();
     logStep("Webhook payload", { 
