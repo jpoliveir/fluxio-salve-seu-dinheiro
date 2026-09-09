@@ -57,8 +57,17 @@ serve(async (req) => {
 
     logStep("Criando checkout na Asaas", { userId: user.id, plan });
 
+    // PIX exige uma chave Pix cadastrada na conta Asaas; habilite via ASAAS_ENABLE_PIX=true
+    const billingTypes = Deno.env.get("ASAAS_ENABLE_PIX") === "true"
+      ? ["PIX", "CREDIT_CARD"]
+      : ["CREDIT_CARD"];
+
+    // A Asaas exige nextDueDate na assinatura; os dados do cliente (nome/CPF)
+    // são coletados na própria página de checkout.
+    const nextDueDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
     const checkoutPayload = {
-      billingTypes: ["PIX", "CREDIT_CARD"],
+      billingTypes,
       chargeTypes: ["RECURRENT"],
       minutesToExpire: 60,
       callback: {
@@ -74,11 +83,9 @@ serve(async (req) => {
           value: planConfig.value,
         },
       ],
-      customerData: {
-        email: user.email,
-      },
       subscription: {
         cycle: "MONTHLY",
+        nextDueDate,
       },
       externalReference,
     };
