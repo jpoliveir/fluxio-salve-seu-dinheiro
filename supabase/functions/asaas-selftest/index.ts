@@ -22,8 +22,23 @@ serve(async (req) => {
   }
 
   try {
-    const res = await fetch(`${apiUrl}/myAccount`, {
+    const res = await fetch(`${apiUrl}/checkouts`, {
+      method: "POST",
       headers: { "access_token": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        billingTypes: ["PIX", "CREDIT_CARD"],
+        chargeTypes: ["RECURRENT"],
+        minutesToExpire: 60,
+        callback: {
+          successUrl: "https://fluxio-salve-seu-dinheiro.lovable.app/payment-success",
+          cancelUrl: "https://fluxio-salve-seu-dinheiro.lovable.app/payment-canceled",
+          expiredUrl: "https://fluxio-salve-seu-dinheiro.lovable.app/payment-canceled",
+        },
+        items: [{ name: "Fluxio Premium - teste", description: "Fluxio Premium - teste", quantity: 1, value: 14.90 }],
+        customerData: { email: "teste@fluxio.app" },
+        subscription: { cycle: "MONTHLY" },
+        externalReference: "selftest:premium",
+      }),
     });
     const data = await res.json().catch(() => null);
     return new Response(
@@ -32,6 +47,7 @@ serve(async (req) => {
         status: res.status,
         apiUrl,
         accountName: data?.name ?? null,
+        checkoutLink: data?.link ?? null,
         email: data?.email ? "presente" : null,
         error: res.ok ? null : data?.errors?.[0]?.description ?? null,
       }),
