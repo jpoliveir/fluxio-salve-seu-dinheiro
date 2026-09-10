@@ -56,6 +56,90 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_connections: {
+        Row: {
+          created_at: string
+          id: string
+          institution_name: string | null
+          last_synced_at: string | null
+          pluggy_item_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          institution_name?: string | null
+          last_synced_at?: string | null
+          pluggy_item_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution_name?: string | null
+          last_synced_at?: string | null
+          pluggy_item_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bank_transactions_cache: {
+        Row: {
+          amount: number
+          connection_id: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          imported_subscription_id: string | null
+          pluggy_transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          connection_id: string
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          imported_subscription_id?: string | null
+          pluggy_transaction_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          connection_id?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          imported_subscription_id?: string | null
+          pluggy_transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_cache_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_cache_imported_subscription_id_fkey"
+            columns: ["imported_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_reports: {
         Row: {
           created_at: string
@@ -189,6 +273,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          bank_connection_id: string | null
           billing_cycle: string
           category: Database["public"]["Enums"]["subscription_category"]
           created_at: string
@@ -198,12 +283,14 @@ export type Database = {
           next_charge_date: string | null
           price: number
           servico: string | null
+          source: string
           status: string
           subscription_status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          bank_connection_id?: string | null
           billing_cycle?: string
           category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
@@ -213,12 +300,14 @@ export type Database = {
           next_charge_date?: string | null
           price?: number
           servico?: string | null
+          source?: string
           status?: string
           subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          bank_connection_id?: string | null
           billing_cycle?: string
           category?: Database["public"]["Enums"]["subscription_category"]
           created_at?: string
@@ -228,12 +317,21 @@ export type Database = {
           next_charge_date?: string | null
           price?: number
           servico?: string | null
+          source?: string
           status?: string
           subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_bank_connection_id_fkey"
+            columns: ["bank_connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
