@@ -5,6 +5,7 @@ import {
   requireUltimate,
   requireUser,
   serviceClient,
+  userClient,
 } from "../_shared/pluggy.ts";
 
 const CATEGORIES = ["alimentacao", "musica", "streaming", "outros"];
