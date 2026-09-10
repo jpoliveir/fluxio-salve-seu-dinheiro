@@ -75,7 +75,7 @@ serve(async (req) => {
     const event = body.event as string;
     const payment = body.payment;
 
-    logStep("Evento recebido", { event, paymentId: payment?.id, externalReference: payment?.externalReference });
+    logStep("Evento recebido", { event, paymentId: payment?.id, subscriptionId: payment?.subscription, externalReference: payment?.externalReference });
 
     if (!payment) {
       // Eventos que não são de cobrança (ex.: CHECKOUT_CREATED) - apenas confirma recebimento
@@ -85,8 +85,33 @@ serve(async (req) => {
       });
     }
 
-    // externalReference foi definido no create-checkout como "{user_id}:{plan}"
-    const externalReference: string | undefined = payment.externalReference;
+    // externalReference foi definido no create-checkout como "{user_id}:{plan}".
+    // Em cobranças de assinatura (RECURRENT), o payment nem sempre carrega o
+    // externalReference do checkout original - nesse caso, buscamos direto na
+    // assinatura vinculada via API da Asaas.
+    let externalReference: string | undefined = payment.externalReference;
+
+    if ((!externalReference || !externalReference.includes(":")) && payment.subscription) {
+      const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
+      const asaasApiUrl = Deno.env.get("ASAAS_API_URL") ?? "https://api.asaas.com/v3";
+      if (asaasApiKey) {
+        try {
+          const subResponse = await fetch(`${asaasApiUrl}/subscriptions/${payment.subscription}`, {
+            headers: { "access_token": asaasApiKey },
+          });
+          if (subResponse.ok) {
+            const subData = await subResponse.json();
+            externalReference = subData.externalReference;
+            logStep("externalReference recuperado via subscription", { subscriptionId: payment.subscription, externalReference });
+          } else {
+            logStep("Falha ao buscar subscription na Asaas", { status: subResponse.status });
+          }
+        } catch (fetchErr) {
+          logStep("Erro ao buscar subscription na Asaas", { error: String(fetchErr) });
+        }
+      }
+    }
+
     if (!externalReference || !externalReference.includes(":")) {
       logStep("externalReference ausente ou inválido, ignorando evento");
       return new Response(JSON.stringify({ success: true, ignored: true }), {

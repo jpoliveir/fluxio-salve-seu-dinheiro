@@ -1,0 +1,26 @@
+name: Keep Supabase Alive
+
+# O plano gratuito do Supabase pausa o projeto após 7 dias sem
+# atividade real no banco. Este job faz uma consulta leve a cada
+# 5 dias para manter o projeto ativo, sem precisar de intervenção manual.
+
+on:
+  schedule:
+    - cron: '0 3 */5 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consulta leve no Supabase (mantém o projeto ativo)
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://ytpdbvglbhhdaufjuvtt.supabase.co/rest/v1/servicos_planos?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "Resposta do Supabase: $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Consulta falhou com status $HTTP_CODE"
+            exit 1
+          fi
