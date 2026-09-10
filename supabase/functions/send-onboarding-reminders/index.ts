@@ -19,6 +19,19 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Esta função só deve ser chamada pelo agendador (cron), nunca por
+  // requisições públicas - sem isso, qualquer pessoa podia disparar
+  // e-mails reais para todos os usuários e sobrecarregar o banco.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const receivedSecret = req.headers.get("x-cron-secret");
+  if (!cronSecret || receivedSecret !== cronSecret) {
+    console.log("Chamada rejeitada: x-cron-secret ausente ou inválido");
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
+  }
+
   try {
     console.log("Starting onboarding reminders job");
 
