@@ -12,9 +12,10 @@ const logStep = (step: string, details?: any) => {
 };
 
 // value em reais, description exibida no checkout hospedado pela Asaas
-const PLAN_CONFIG: Record<string, { value: number; description: string }> = {
-  premium: { value: 14.90, description: "Fluxio Premium - assinatura mensal" },
-  enterprise: { value: 29.90, description: "Fluxio Ultimate - assinatura mensal" },
+// name: limite de 30 caracteres imposto pela Asaas
+const PLAN_CONFIG: Record<string, { value: number; name: string; description: string }> = {
+  premium: { value: 14.90, name: "Fluxio Premium", description: "Fluxio Premium - assinatura mensal" },
+  enterprise: { value: 29.90, name: "Fluxio Ultimate", description: "Fluxio Ultimate - assinatura mensal" },
 };
 
 serve(async (req) => {
@@ -77,7 +78,7 @@ serve(async (req) => {
       },
       items: [
         {
-          name: planConfig.description,
+          name: planConfig.name.slice(0, 30),
           description: planConfig.description,
           quantity: 1,
           value: planConfig.value,
