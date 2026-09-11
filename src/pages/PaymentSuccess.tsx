@@ -21,7 +21,7 @@ export default function PaymentSuccess() {
       try {
         for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
           if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 3000));
-          const verifiedPlan = await checkSubscription();
+          const verifiedPlan = await checkSubscription(true);
 
           if (verifiedPlan === 'premium' || verifiedPlan === 'enterprise') {
             setVerificationComplete(true);

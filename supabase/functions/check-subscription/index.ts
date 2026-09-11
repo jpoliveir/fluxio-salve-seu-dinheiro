@@ -90,6 +90,9 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    const requestBody = await req.json().catch(() => ({}));
+    const recoverPayment = requestBody?.recoverPayment === true;
+
     // Buscar assinatura ativa na Asaas
     const { data: asaasSub, error: asaasError } = await supabaseClient
       .from('asaas_subscriptions')
@@ -123,7 +126,9 @@ serve(async (req) => {
       });
     }
 
-    const recoveredPlan = await recoverAsaasSubscription(supabaseClient, user);
+    const recoveredPlan = recoverPayment
+      ? await recoverAsaasSubscription(supabaseClient, user)
+      : null;
     if (recoveredPlan) {
       return new Response(JSON.stringify({ subscribed: true, plan: recoveredPlan }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

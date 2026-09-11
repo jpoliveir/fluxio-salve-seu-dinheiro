@@ -6,7 +6,7 @@ interface SubscriptionContextType {
   isSubscribed: boolean;
   plan: 'free' | 'basic' | 'premium' | 'enterprise';
   loading: boolean;
-  checkSubscription: () => Promise<'free' | 'basic' | 'premium' | 'enterprise'>;
+  checkSubscription: (recoverPayment?: boolean) => Promise<'free' | 'basic' | 'premium' | 'enterprise'>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -30,7 +30,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [plan, setPlan] = useState<'free' | 'basic' | 'premium' | 'enterprise'>('free');
   const [loading, setLoading] = useState(true);
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (recoverPayment = false) => {
     if (!user || !session) {
       setIsSubscribed(false);
       setPlan('free');
@@ -40,6 +40,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { recoverPayment },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
