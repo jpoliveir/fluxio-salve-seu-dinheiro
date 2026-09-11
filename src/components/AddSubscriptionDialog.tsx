@@ -10,6 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Search } from "lucide-react";
 import { subscriptionSchema } from "@/lib/validations";
+import { currencyInputToNumber, formatCurrencyInput } from "@/lib/utils";
 
 interface AddSubscriptionDialogProps {
   open: boolean;
@@ -168,7 +169,7 @@ export function AddSubscriptionDialog({
     try {
       subscriptionSchema.parse({
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: currencyInputToNumber(formData.price),
         category: formData.category,
         billing_cycle: formData.billing_cycle,
         servico: formData.servico === "none" ? undefined : formData.servico,
@@ -190,7 +191,7 @@ export function AddSubscriptionDialog({
         .from('subscriptions')
         .insert({
           name: formData.name,
-          price: parseFloat(formData.price),
+          price: currencyInputToNumber(formData.price),
           category: formData.category as any,
           servico: formData.servico === "none" ? null : formData.servico,
           next_charge_date: formData.next_charge_date || null,
@@ -204,7 +205,7 @@ export function AddSubscriptionDialog({
       supabase.functions.invoke('sync-pricing', {
         body: {
           subscriptionName: formData.name,
-          price: parseFloat(formData.price),
+          price: currencyInputToNumber(formData.price),
           category: formData.category,
           userId: user.id
         }
@@ -325,11 +326,13 @@ export function AddSubscriptionDialog({
               <Label htmlFor="price">Preço Mensal (R$)</Label>
               <Input
                 id="price"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="Ex: 39.90"
+                onChange={(e) => setFormData({ ...formData, price: formatCurrencyInput(e.target.value) })}
+                placeholder="0,00"
+                aria-label="Preço mensal em reais"
                 required
               />
             </div>

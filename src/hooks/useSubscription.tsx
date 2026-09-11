@@ -6,14 +6,14 @@ interface SubscriptionContextType {
   isSubscribed: boolean;
   plan: 'free' | 'basic' | 'premium' | 'enterprise';
   loading: boolean;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: (recoverPayment?: boolean) => Promise<'free' | 'basic' | 'premium' | 'enterprise'>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
   isSubscribed: false,
   plan: 'free',
   loading: true,
-  checkSubscription: async () => {},
+  checkSubscription: async () => 'free',
 });
 
 export const useSubscription = () => {
@@ -30,16 +30,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [plan, setPlan] = useState<'free' | 'basic' | 'premium' | 'enterprise'>('free');
   const [loading, setLoading] = useState(true);
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (recoverPayment = false) => {
     if (!user || !session) {
       setIsSubscribed(false);
       setPlan('free');
       setLoading(false);
-      return;
+      return 'free';
     }
 
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { recoverPayment },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -55,10 +56,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       // Sincronizar assinatura do Fluxio na dashboard
       await syncFluxioSubscription(newPlan, newIsSubscribed);
+      return newPlan;
     } catch (error) {
       console.error('Error checking subscription:', error);
       setIsSubscribed(false);
       setPlan('free');
+      return 'free';
     } finally {
       setLoading(false);
     }

@@ -15,33 +15,35 @@ export default function PaymentSuccess() {
   const [verificationComplete, setVerificationComplete] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const verifySubscription = async () => {
       try {
-        // Aguarda um pouco para a Asaas processar
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Força verificação da assinatura
-        await checkSubscription();
-        
-        setVerificationComplete(true);
-        
-        toast({
-          title: "Assinatura Ativada!",
-          description: "Sua assinatura foi ativada com sucesso. Aproveite todos os recursos premium!",
-        });
+        for (let attempt = 0; attempt < 10 && !cancelled; attempt += 1) {
+          if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 3000));
+          const verifiedPlan = await checkSubscription(true);
+
+          if (verifiedPlan === 'premium' || verifiedPlan === 'enterprise') {
+            setVerificationComplete(true);
+            toast({
+              title: "Assinatura ativada!",
+              description: "Seu novo plano já está disponível.",
+            });
+            return;
+          }
+        }
       } catch (error) {
         console.error('Erro ao verificar assinatura:', error);
-        toast({
-          title: "Verificação em andamento",
-          description: "Sua assinatura está sendo processada. Pode levar alguns minutos para aparecer.",
-        });
       } finally {
-        setIsVerifying(false);
+        if (!cancelled) setIsVerifying(false);
       }
     };
 
     verifySubscription();
-  }, [checkSubscription, toast]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getPlanName = (planType: string) => {
     switch (planType) {
