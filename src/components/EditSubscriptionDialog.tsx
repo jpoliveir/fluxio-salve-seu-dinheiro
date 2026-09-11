@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Search } from "lucide-react";
 import { subscriptionSchema } from "@/lib/validations";
+import { currencyInputToNumber, formatCurrencyInput, numberToCurrencyInput } from "@/lib/utils";
 
 interface Subscription {
   id: string;
@@ -62,7 +63,7 @@ export function EditSubscriptionDialog({
     if (subscription) {
       const data = {
         name: subscription.name,
-        price: subscription.price.toString(),
+        price: numberToCurrencyInput(subscription.price),
         category: subscription.category,
         servico: subscription.servico || 'none',
         next_charge_date: subscription.next_charge_date || '',
@@ -188,7 +189,7 @@ export function EditSubscriptionDialog({
     if (subscription) {
       const data = {
         name: subscription.name,
-        price: subscription.price.toString(),
+        price: numberToCurrencyInput(subscription.price),
         category: subscription.category,
         servico: subscription.servico || 'none',
         next_charge_date: subscription.next_charge_date || '',
@@ -213,7 +214,7 @@ export function EditSubscriptionDialog({
       // Validate input data using Zod schema
       const validatedData = subscriptionSchema.parse({
         name: formData.name,
-        price: parseFloat(formData.price),
+        price: currencyInputToNumber(formData.price),
         category: formData.category,
         billing_cycle: formData.billing_cycle,
         next_charge_date: formData.next_charge_date || undefined,
@@ -321,12 +322,13 @@ export function EditSubscriptionDialog({
             <Label htmlFor="price">Preço Mensal (R$)</Label>
             <Input
               id="price"
-              type="number"
-              step="0.01"
-              min="0"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
               value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              placeholder="29.90"
+                onChange={(e) => setFormData({ ...formData, price: formatCurrencyInput(e.target.value) })}
+                placeholder="0,00"
+                aria-label="Preço mensal em reais"
               required
             />
           </div>

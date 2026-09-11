@@ -6,14 +6,14 @@ interface SubscriptionContextType {
   isSubscribed: boolean;
   plan: 'free' | 'basic' | 'premium' | 'enterprise';
   loading: boolean;
-  checkSubscription: () => Promise<void>;
+  checkSubscription: () => Promise<'free' | 'basic' | 'premium' | 'enterprise'>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
   isSubscribed: false,
   plan: 'free',
   loading: true,
-  checkSubscription: async () => {},
+  checkSubscription: async () => 'free',
 });
 
 export const useSubscription = () => {
@@ -35,7 +35,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setIsSubscribed(false);
       setPlan('free');
       setLoading(false);
-      return;
+      return 'free';
     }
 
     try {
@@ -55,10 +55,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       // Sincronizar assinatura do Fluxio na dashboard
       await syncFluxioSubscription(newPlan, newIsSubscribed);
+      return newPlan;
     } catch (error) {
       console.error('Error checking subscription:', error);
       setIsSubscribed(false);
       setPlan('free');
+      return 'free';
     } finally {
       setLoading(false);
     }

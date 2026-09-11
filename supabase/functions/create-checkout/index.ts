@@ -18,6 +18,53 @@ const PLAN_CONFIG: Record<string, { value: number; name: string; description: st
   enterprise: { value: 29.90, name: "Fluxio Ultimate", description: "Fluxio Ultimate - assinatura mensal" },
 };
 
+async function ensureWebhook(apiUrl: string, apiKey: string, webhookToken: string, webhookUrl: string) {
+  const listResponse = await fetch(`${apiUrl}/webhooks`, {
+    headers: { "access_token": apiKey },
+  });
+
+  if (!listResponse.ok) {
+    throw new Error("Não foi possível verificar o webhook da Asaas");
+  }
+
+  const webhookList = await listResponse.json();
+  const existingWebhook = webhookList?.data?.find((webhook: { url?: string }) => webhook.url === webhookUrl);
+  if (existingWebhook) return;
+
+  const createResponse = await fetch(`${apiUrl}/webhooks`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "access_token": apiKey,
+    },
+    body: JSON.stringify({
+      name: "Fluxio Assinaturas",
+      url: webhookUrl,
+      enabled: true,
+      interrupted: false,
+      apiVersion: 3,
+      authToken: webhookToken,
+      emailEnabledForProvider: false,
+      events: [
+        "PAYMENT_CONFIRMED",
+        "PAYMENT_RECEIVED",
+        "PAYMENT_OVERDUE",
+        "PAYMENT_DELETED",
+        "PAYMENT_REFUNDED",
+        "PAYMENT_CHARGEBACK_REQUESTED",
+      ],
+    }),
+  });
+
+  if (!createResponse.ok) {
+    const webhookError = await createResponse.json().catch(() => ({}));
+    logStep("Erro ao registrar webhook", { status: createResponse.status, body: webhookError });
+    throw new Error("Não foi possível configurar a confirmação automática do pagamento");
+  }
+
+  logStep("Webhook registrado na Asaas");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,6 +97,19 @@ serve(async (req) => {
     if (!asaasApiKey) throw new Error("ASAAS_API_KEY não configurada");
     // Ambiente: use https://api-sandbox.asaas.com/v3 em ASAAS_API_URL enquanto testa
     const asaasApiUrl = Deno.env.get("ASAAS_API_URL") ?? "https://api.asaas.com/v3";
+
+    const webhookToken = Deno.env.get("ASAAS_WEBHOOK_TOKEN");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (!webhookToken || !supabaseUrl) {
+      throw new Error("Confirmação automática de pagamento não configurada");
+    }
+
+    await ensureWebhook(
+      asaasApiUrl,
+      asaasApiKey,
+      webhookToken,
+      `${supabaseUrl}/functions/v1/asaas-webhook`,
+    );
 
     const origin = req.headers.get("origin") ?? "https://fluxio.app";
 

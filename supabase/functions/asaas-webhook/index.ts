@@ -120,7 +120,16 @@ serve(async (req) => {
       });
     }
 
-    const [userId, plan] = externalReference.split(":");
+    const [userId, rawPlan] = externalReference.split(":");
+    const plan = rawPlan === "ultimate" ? "enterprise" : rawPlan;
+
+    if (!userId || !["premium", "enterprise"].includes(plan)) {
+      logStep("Plano ou usuário inválido no externalReference", { externalReference });
+      return new Response(JSON.stringify({ error: "Invalid external reference" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     let status: string | null = null;
     if (ACTIVE_EVENTS.has(event)) {
