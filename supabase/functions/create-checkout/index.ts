@@ -28,11 +28,12 @@ async function ensureWebhook(apiUrl: string, apiKey: string, webhookToken: strin
   }
 
   const webhookList = await listResponse.json();
-  const existingWebhook = webhookList?.data?.find((webhook: { url?: string }) => webhook.url === webhookUrl);
-  if (existingWebhook) return;
-
-  const createResponse = await fetch(`${apiUrl}/webhooks`, {
-    method: "POST",
+  const existingWebhook = webhookList?.data?.find((webhook: { id?: string; url?: string }) => webhook.url === webhookUrl);
+  const webhookEndpoint = existingWebhook?.id
+    ? `${apiUrl}/webhooks/${existingWebhook.id}`
+    : `${apiUrl}/webhooks`;
+  const webhookResponse = await fetch(webhookEndpoint, {
+    method: existingWebhook?.id ? "PUT" : "POST",
     headers: {
       "Content-Type": "application/json",
       "access_token": apiKey,
@@ -56,13 +57,13 @@ async function ensureWebhook(apiUrl: string, apiKey: string, webhookToken: strin
     }),
   });
 
-  if (!createResponse.ok) {
-    const webhookError = await createResponse.json().catch(() => ({}));
-    logStep("Erro ao registrar webhook", { status: createResponse.status, body: webhookError });
+  if (!webhookResponse.ok) {
+    const webhookError = await webhookResponse.json().catch(() => ({}));
+    logStep("Erro ao registrar webhook", { status: webhookResponse.status, body: webhookError });
     throw new Error("Não foi possível configurar a confirmação automática do pagamento");
   }
 
-  logStep("Webhook registrado na Asaas");
+  logStep(existingWebhook ? "Webhook atualizado na Asaas" : "Webhook registrado na Asaas");
 }
 
 serve(async (req) => {
