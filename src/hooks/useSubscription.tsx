@@ -76,7 +76,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         .from('subscriptions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('name', 'Fluxio')
+        .ilike('name', 'Fluxio%')
         .order('created_at', { ascending: false });
 
       // Se houver múltiplas, deletar todas exceto a primeira (mais recente)
@@ -91,54 +91,49 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       // Pegar a assinatura existente (a mais recente)
       const existingFluxio = allFluxioSubs && allFluxioSubs.length > 0 ? allFluxioSubs[0] : null;
 
-      // Mapear planos para preços
-      const planPrices: Record<string, number> = {
-        'premium': 14.90,
-        'enterprise': 29.90,
+      // Mapear planos para preços e nomes
+      const planDetails: Record<string, { price: number; label: string }> = {
+        'premium': { price: 14.90, label: 'Premium' },
+        'enterprise': { price: 29.90, label: 'Ultimate' },
       };
 
-      const price = planPrices[currentPlan];
+      const details = planDetails[currentPlan];
 
       // Se tem plano pago ativo
-      if (subscribed && price) {
+      if (subscribed && details) {
+        const payload = {
+          name: `Fluxio ${details.label}`,
+          price: details.price,
+          status: 'active',
+          billing_cycle: 'monthly',
+          category: 'outros' as const,
+          servico: 'Fluxio',
+        };
+
         if (existingFluxio) {
-          // Atualizar assinatura existente
+          // Atualizar assinatura existente com o plano atual
           await supabase
             .from('subscriptions')
-            .update({
-              price: price,
-              status: 'active',
-              billing_cycle: 'monthly',
-              category: 'outros',
-            })
+            .update(payload)
             .eq('id', existingFluxio.id);
         } else {
           // Criar nova assinatura do Fluxio
           await supabase
             .from('subscriptions')
-            .insert({
-              user_id: user.id,
-              name: 'Fluxio',
-              price: price,
-              status: 'active',
-              billing_cycle: 'monthly',
-              category: 'outros',
-              servico: 'Fluxio',
-            });
+            .insert({ user_id: user.id, ...payload });
         }
-      } else if (existingFluxio && !subscribed) {
-        // Se não tem mais plano ativo, marcar como cancelada
+      } else if (existingFluxio) {
+        // Sem plano ativo: remover a assinatura do Fluxio da dashboard
         await supabase
           .from('subscriptions')
-          .update({
-            status: 'cancelled',
-          })
+          .delete()
           .eq('id', existingFluxio.id);
       }
     } catch (error) {
       console.error('Error syncing Fluxio subscription:', error);
     }
   };
+
 
   useEffect(() => {
     checkSubscription();
