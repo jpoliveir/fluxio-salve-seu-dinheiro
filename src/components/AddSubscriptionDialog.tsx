@@ -206,8 +206,7 @@ export function AddSubscriptionDialog({
         body: {
           subscriptionName: formData.name,
           price: currencyInputToNumber(formData.price),
-          category: formData.category,
-          userId: user.id
+          category: formData.category
         }
       }).then(response => {
         if (response.data?.action === 'inserted') {
