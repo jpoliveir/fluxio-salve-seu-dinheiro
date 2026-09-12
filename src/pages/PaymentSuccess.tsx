@@ -109,7 +109,7 @@ export default function PaymentSuccess() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={checkSubscription}
+                  onClick={() => { void checkSubscription(true); }}
                   className="w-full"
                 >
                   Verificar Status Novamente
