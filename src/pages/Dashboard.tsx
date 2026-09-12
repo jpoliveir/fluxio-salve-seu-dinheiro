@@ -589,6 +589,17 @@ export default function Dashboard() {
                         >
                           <Edit size={16} />
                         </Button>
+                        {subscription.name !== 'Fluxio' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeletingSubscription(subscription)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            aria-label={`Excluir assinatura ${subscription.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
