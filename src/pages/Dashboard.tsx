@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [deletingSubscription, setDeletingSubscription] = useState<Subscription | null>(null);
   
   const { economiaData, loading: economiaLoading, recalcular } = useEconomiaAssinaturas();
   const { isDuplicate, getDuplicateInfo, detectDuplicates } = useDuplicateDetection();
@@ -152,6 +153,34 @@ export default function Dashboard() {
       toast({
         title: "Erro",
         description: "Erro ao remover assinaturas. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSingleSubscription = async () => {
+    if (!deletingSubscription) return;
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('id', deletingSubscription.id)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Assinatura removida",
+        description: `"${deletingSubscription.name}" foi excluída com sucesso.`,
+      });
+
+      setDeletingSubscription(null);
+      await fetchSubscriptions();
+    } catch (error) {
+      console.error('Erro ao deletar assinatura:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover a assinatura. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -589,6 +618,17 @@ export default function Dashboard() {
                         >
                           <Edit size={16} />
                         </Button>
+                        {subscription.name !== 'Fluxio' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeletingSubscription(subscription)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            aria-label={`Excluir assinatura ${subscription.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -653,7 +693,27 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
+      <AlertDialog open={!!deletingSubscription} onOpenChange={(open) => !open && setDeletingSubscription(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir assinatura?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso irá remover permanentemente "{deletingSubscription?.name}". Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSingleSubscription}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Modal de Planos */}
       {showPlans && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
