@@ -16,7 +16,28 @@ serve(async (req) => {
   }
 
   try {
-    const { subscriptionName, price, category, userId, subscriptionId } = await req.json();
+    // Autentica o chamador: userId vem do token, nunca do corpo da requisição,
+    // para impedir relatórios de preço falsos em nome de outros usuários.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: authData, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (authError || !authData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Sessão inválida' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const userId = authData.user.id;
+
+    const { subscriptionName, price, category, subscriptionId } = await req.json();
     
     console.log('[SYNC-PRICING] Received:', { subscriptionName, price, category });
 
@@ -36,9 +57,7 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Fetch current services
 
     // Fetch current services
     const { data: currentServices, error: fetchError } = await supabase
