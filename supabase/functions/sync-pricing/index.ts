@@ -168,29 +168,40 @@ Se não conseguir identificar, use confidence: 0.`;
 
     // Check consensus for existing services
     if (!is_new_service) {
-      // Get all reports for this service/plan
+      // Usar apenas o relatório mais recente POR USUÁRIO: o consenso exige
+      // MIN_REPORTS usuários distintos, impedindo que uma única conta
+      // manipule o preço compartilhado.
       const { data: reports, error: reportsError } = await supabase
         .from('price_reports')
-        .select('valor_reportado')
+        .select('user_id, valor_reportado, created_at')
         .eq('servico', servico)
         .eq('nome_plano', nome_plano)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false });
 
       if (reportsError) {
         console.error('[SYNC-PRICING] Reports fetch error:', reportsError);
       }
 
-      const totalReports = reports?.length || 0;
-      
-      if (totalReports >= MIN_REPORTS) {
-        // Count occurrences of each price
+      // Último preço reportado por usuário
+      const latestByUser = new Map<string, number>();
+      reports?.forEach(r => {
+        if (!latestByUser.has(r.user_id)) {
+          latestByUser.set(r.user_id, Number(r.valor_reportado));
+        }
+      });
+
+      const totalUsers = latestByUser.size;
+
+      if (totalUsers >= MIN_REPORTS) {
+        // Contar usuários por preço
         const priceCounts: Record<string, number> = {};
-        reports?.forEach(r => {
-          const key = r.valor_reportado.toString();
+        latestByUser.forEach(price => {
+          const key = price.toString();
           priceCounts[key] = (priceCounts[key] || 0) + 1;
         });
 
-        // Find most common price
+        // Preço com mais usuários distintos
         let mostCommonPrice = 0;
         let mostCommonCount = 0;
         Object.entries(priceCounts).forEach(([priceStr, count]) => {
@@ -200,8 +211,8 @@ Se não conseguir identificar, use confidence: 0.`;
           }
         });
 
-        const consensusPercentage = mostCommonCount / totalReports;
-        console.log('[SYNC-PRICING] Consensus check:', { totalReports, mostCommonPrice, consensusPercentage });
+        const consensusPercentage = mostCommonCount / totalUsers;
+        console.log('[SYNC-PRICING] Consensus check:', { totalUsers, mostCommonPrice, consensusPercentage });
 
         // Get current price
         const currentService = currentServices?.find(s => s.servico === servico && s.nome_plano === nome_plano);
