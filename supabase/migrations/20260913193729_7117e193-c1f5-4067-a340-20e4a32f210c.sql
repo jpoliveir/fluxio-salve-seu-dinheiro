@@ -1,0 +1,10 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_subscription_limit() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.get_price_consensus(text, text, numeric) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.send_onboarding_reminders() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.send_renewal_reminders() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_user_id() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.enforce_subscription_limit() TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_price_consensus(text, text, numeric) TO service_role;
+GRANT EXECUTE ON FUNCTION public.send_onboarding_reminders() TO service_role;
+GRANT EXECUTE ON FUNCTION public.send_renewal_reminders() TO service_role;
