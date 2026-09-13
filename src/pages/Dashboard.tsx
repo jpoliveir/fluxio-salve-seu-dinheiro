@@ -137,7 +137,7 @@ export default function Dashboard() {
         .from('subscriptions')
         .delete()
         .eq('user_id', user?.id)
-        .neq('name', 'Fluxio');
+        .not('name', 'ilike', 'Fluxio%');
 
       if (error) throw error;
 
@@ -527,7 +527,7 @@ export default function Dashboard() {
               >
                 Ver Planos
               </Button>
-              {subscriptions.filter(sub => sub.name !== 'Fluxio').length > 0 && (
+              {subscriptions.filter(sub => !sub.name.startsWith('Fluxio')).length > 0 && (
                 <Button 
                   variant="destructive" 
                   size="sm"
@@ -618,7 +618,7 @@ export default function Dashboard() {
                         >
                           <Edit size={16} />
                         </Button>
-                        {subscription.name !== 'Fluxio' && (
+                        {!subscription.name.startsWith('Fluxio') && (
                           <Button
                             size="sm"
                             variant="ghost"
