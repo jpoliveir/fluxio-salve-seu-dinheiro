@@ -275,30 +275,39 @@ Se não conseguir identificar, use confidence: 0.`;
           action: 'reported',
           servico,
           nome_plano,
-          total_reports: totalReports,
-          message: totalReports < MIN_REPORTS 
-            ? `Aguardando mais ${MIN_REPORTS - totalReports} relatórios para consenso`
+          total_users: totalUsers,
+          message: totalUsers < MIN_REPORTS
+            ? `Aguardando mais ${MIN_REPORTS - totalUsers} usuários para consenso`
             : 'Preço registrado, aguardando consenso de 35%'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Handle new service - only add after consensus
+    // Handle new service - only add after consensus de usuários distintos
     if (is_new_service) {
       const { data: newServiceReports } = await supabase
         .from('price_reports')
-        .select('valor_reportado')
+        .select('user_id, valor_reportado, created_at')
         .eq('servico', servico)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false });
 
-      const totalNewReports = newServiceReports?.length || 0;
+      // Último preço reportado por usuário
+      const latestByUser = new Map<string, number>();
+      newServiceReports?.forEach(r => {
+        if (!latestByUser.has(r.user_id)) {
+          latestByUser.set(r.user_id, Number(r.valor_reportado));
+        }
+      });
 
-      if (totalNewReports >= MIN_REPORTS) {
-        // Check consensus for new service
+      const totalNewUsers = latestByUser.size;
+
+      if (totalNewUsers >= MIN_REPORTS) {
+        // Consenso por usuários distintos
         const priceCounts: Record<string, number> = {};
-        newServiceReports?.forEach(r => {
-          const key = r.valor_reportado.toString();
+        latestByUser.forEach(price => {
+          const key = price.toString();
           priceCounts[key] = (priceCounts[key] || 0) + 1;
         });
 
@@ -311,7 +320,7 @@ Se não conseguir identificar, use confidence: 0.`;
           }
         });
 
-        const consensusPercentage = mostCommonCount / totalNewReports;
+        const consensusPercentage = mostCommonCount / totalNewUsers;
 
         if (consensusPercentage >= CONSENSUS_THRESHOLD) {
           const { error: insertError } = await supabase
@@ -341,8 +350,8 @@ Se não conseguir identificar, use confidence: 0.`;
           action: 'pending_new',
           servico,
           nome_plano,
-          total_reports: totalNewReports,
-          message: `Novo serviço detectado, aguardando ${MIN_REPORTS} relatórios para adicionar`
+          total_users: totalNewUsers,
+          message: `Novo serviço detectado, aguardando ${MIN_REPORTS} usuários para adicionar`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
